@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "resumi"
+version = "0.1.0"
+description = "Personal assistant API for audio notes, Gmail ingestion, RAG, and todos."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "faiss-cpu>=1.11.0,<2.0.0",
+  "fastapi>=0.115.0,<1.0.0",
+  "gradio>=5.24.0,<6.0.0",
+  "uvicorn[standard]>=0.34.0,<1.0.0",
+  "python-multipart>=0.0.9,<1.0.0",
+  "pydantic-settings>=2.8.0,<3.0.0",
+  "openai>=1.66.0,<2.0.0",
+  "google-api-python-client>=2.164.0,<3.0.0",
+  "google-auth>=2.38.0,<3.0.0",
+  "google-auth-httplib2>=0.2.0,<1.0.0",
+  "google-auth-oauthlib>=1.2.1,<2.0.0",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28.1,<1.0.0",
+  "mypy>=1.15.0,<2.0.0",
+  "pytest>=8.3.5,<9.0.0",
+  "pytest-asyncio>=0.25.3,<1.0.0",
+  "ruff>=0.11.0,<1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/resumi"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = []
+strict = true
+warn_unused_configs = true
+explicit_package_bases = true
+namespace_packages = true
+packages = ["resumi"]
+mypy_path = "src"
