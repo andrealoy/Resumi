@@ -12,8 +12,6 @@ COPY src ./src
 
 RUN uv sync --no-dev --frozen || uv sync --no-dev
 
-COPY credentials ./credentials
-
 EXPOSE 8000
 
 CMD ["uv", "run", "uvicorn", "resumi.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"]
