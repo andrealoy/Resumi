@@ -77,7 +77,8 @@ class Agent:
     # -- search --------------------------------------------------------------
 
     def _search(self, message: str, route: dict[str, object]) -> list[DocumentMatch]:
-        prefixes = route.get("prefixes")  # type: ignore[arg-type]
+        raw_prefixes = route.get("prefixes")
+        prefixes = raw_prefixes if isinstance(raw_prefixes, list) else None
         if prefixes:
             scoped = self._kb.search(
                 query=message, limit=self._search_limit, prefixes=prefixes

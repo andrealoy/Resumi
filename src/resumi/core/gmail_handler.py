@@ -178,7 +178,8 @@ class GmailHandler:
                 and h.get("name") == name
                 and isinstance(h.get("value"), str)
             ):
-                return h["value"]
+                value: str = h["value"]
+                return value
         return None
 
     def _body(self, payload: dict[str, object]) -> str:
