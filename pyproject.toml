@@ -37,6 +37,7 @@ packages = ["src/resumi"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+filterwarnings = ["ignore::pytest.PytestConfigWarning"]
 
 [tool.ruff]
 line-length = 88
