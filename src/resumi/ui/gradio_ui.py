@@ -5,7 +5,6 @@ from typing import cast
 import gradio as gr
 
 from resumi.core.agent import Agent
-from resumi.core.mail_tools import classify_email
 from resumi.ui.chat import ask
 
 
@@ -72,8 +71,12 @@ def create_gradio_blocks(*, agent: Agent) -> gr.Blocks:
                     label="Catégorie thématique proposée"
                 )
 
+                async def classify_with_llm(email_text: str) -> str:
+                    result = await agent.classify_email(email_text=email_text)
+                    return result["raw_result"]
+
                 classify_btn.click(
-                    fn=classify_email,
+                    fn=classify_with_llm,
                     inputs=email_input,
                     outputs=category_output,
                 )

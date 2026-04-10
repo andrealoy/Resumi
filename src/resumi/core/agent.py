@@ -19,16 +19,61 @@ class Agent:
         self._kb = knowledge_base
         self._model = model
         self._search_limit = search_limit
-        self._client = client or AsyncOpenAI(api_key=api_key, base_url=base_url or None)
+        self._client = client or AsyncOpenAI(
+            api_key=api_key,
+            base_url=base_url or None,
+        )
 
     async def chat(self, *, message: str) -> dict[str, object]:
         route = self._route(message)
         sources = self._search(message, route)
         answer = await self._answer(message, sources, route)
+
         return {
             "answer": answer,
             "sources": [s.to_dict() for s in sources],
         }
+
+    async def classify_email(self, *, email_text: str) -> dict[str, str]:
+        resp = await self._client.responses.create(
+            model=self._model,
+            instructions=(
+                "Tu es un assistant de classification d'emails. "
+                "Tu dois classer l'email dans UNE seule catégorie parmi : "
+                "Personnel, Professionnel, Administratif, Académique, Commercial, Autre. "
+                "Tu dois aussi proposer un niveau de priorité parmi : basse, moyenne, haute. "
+                "Réponds uniquement en JSON valide avec les clés : "
+                "category, priority, reason."
+            ),
+            input=f"Email à analyser :\n\n{email_text}",
+        )
+
+        text = resp.output_text.strip()
+
+        return {"raw_result": text}
+
+    async def draft_email_reply(self, *, email_text: str) -> str:
+        resp = await self._client.responses.create(
+            model=self._model,
+            instructions=(
+                "Tu es un assistant de rédaction d'emails. "
+                "Rédige un brouillon de réponse en français, clair, poli, concis et naturel. "
+                "N'invente pas d'informations précises qui ne figurent pas dans l'email. "
+                "Le ton doit être professionnel mais humain. "
+                "Retourne uniquement le texte du brouillon."
+            ),
+            input=(
+                f"Voici l'email reçu :\n\n{email_text}\n\n"
+                "Rédige une réponse adaptée."
+            ),
+        )
+
+        text = resp.output_text.strip()
+
+        if text:
+            return text
+
+        return "Impossible de générer un brouillon pour le moment."
 
     # -- routing -------------------------------------------------------------
 
@@ -141,7 +186,8 @@ class Agent:
         parts = [f"Routage: {route['label']}"]
         for s in sources:
             chunk = self._kb.read_chunk(
-                relative_path=s.relative_path, chunk_index=s.chunk_index
+                relative_path=s.relative_path,
+                chunk_index=s.chunk_index,
             )
             snippet = (s.excerpt or chunk)[:1800].strip()
             parts.append(
