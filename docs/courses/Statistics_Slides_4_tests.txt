@@ -1,0 +1,983 @@
+Econometrics Part 2
+The linear model: tests
+
+Jose Angel Garcia Sanchez
+jagarsanc@gmail.com
+Sorbonne Data Analytics
+
+November 2025
+
+1 / 64
+
+Outline
+1
+
+2
+
+3
+
+4
+
+Tests
+Reminder: common distributions
+Tests in finite sample: the T-test
+Tests in large sample: the T-test
+Size, p-value, forecasting
+Size and power
+P-value
+Forecasting
+Usual tests: T and F
+Generalization of the T-test
+Simultaneous testing: the F-test
+Generalization of the F-test
+Testing for structural change
+Purpose
+Computation
+Non constant variances
+2 / 64
+
+Outline
+1
+
+2
+
+3
+
+4
+
+Tests
+Reminder: common distributions
+Tests in finite sample: the T-test
+Tests in large sample: the T-test
+Size, p-value, forecasting
+Size and power
+P-value
+Forecasting
+Usual tests: T and F
+Generalization of the T-test
+Simultaneous testing: the F-test
+Generalization of the F-test
+Testing for structural change
+Purpose
+Computation
+Non constant variances
+3 / 64
+
+Usual distributions to know
+
+Normal
+χ2
+Student (T)
+Fisher
+
+4 / 64
+
+The Normal distribution
+
+It is the usual "bell-shaped" distribution. It can also be called the Gaussian distribution.
+X ,→ N(µ, σ 2 ) if:
+(x−µ)2
+1
+f (x) = √ e − 2σ2
+σ 2π
+Any linear combination of independent normal random variables is a normal random variable
+
+5 / 64
+
+The Chi-squared distribution
+
+It is defined as the sum of squared independent normal variables.
+Y ,→ χ2n if:
+n
+X
+Y =
+Xi2
+i=1
+
+Where Xi ,→ N(0, 1) and the Xi are independent. Any linear combination of independent χ2
+random variables is a χ2 random variable
+
+6 / 64
+
+The Student distribution
+
+It is defined as a ratio of a normal and a square root χ2 that are independent.
+Y ,→ Tn if:
+X
+Y =q
+Z
+n
+
+Where X ,→ N(0, 1) and Z ,→ χ2n , and are independent. The Student distribution is
+bell-shaped, and when n → +∞ it becomes a normal distribution
+
+7 / 64
+
+The Fisher distribution
+
+It is defined as a ratio of two χ2 that are independent.
+Y ,→ Fp,q if:
+Z1 /p
+Y =
+Z2 /q
+Where Z1 ,→ χ2p and Z2 ,→ χ2q , and are independent.
+
+8 / 64
+
+Reminder: OLS estimators are BLUE
+We still consider that the X variables are not random at this stage.
+We have b̂ = (X ′ X )−1 X ′ y
+E (b̂) = b: unbiased
+V (b̂) = σ 2 (X ′ X )−1 , the smallest possible
+P
+σ̂ 2 = ( ûi2 )/(N − k): unbiased
+So V̂ (b̂) = σ̂ 2 (X ′ X )−1
+Gauss-Markov theorem: under hypotheses 1 to 4, the OLS estimator is the Best Linear
+Unbiased Estimator (unbiased with a minimal variance)
+So far, no assumption on the distribution of variables (y , X or u)
+So we don’t know yet the distribution of parameters b, which would be needed for tests
+
+9 / 64
+
+Distribution of estimators in a finite sample (1)
+Finite sample=sample not so large
+We need to assume that u ,→ N(0, σ 2 IN )
+b̂ ,→ N(b, σ 2 (X ′ X )−1 )
+Calling b̂j the j th element of b̂ and αjj the j th element of the diagonal of (X ′ X )−1 ,
+σb̂2 = σ 2 αjj :
+j
+
+b̂j ,→ N(bj , σb̂2 )
+j
+
+Next, we standardize b̂j to have it follow a standard Normal distribution:
+∀j,
+
+b̂j − bj
+,→ N(0, 1)
+σb̂j
+
+10 / 64
+
+Distribution of estimators in a finite sample (2)
+The previous expression is used to test possible values on bj , for given b̂j and σb̂j found
+from the sample
+But σb̂j is still unkown: the standard error of error terms
+Plugging the estimated σ̂b̂j instead of the true σb̂j will change the distribution from a
+Normal to a Student
+Why: σ̂b̂j is an imperfect estimate of σb̂j
+∀j, tj =
+
+b̂j − bj
+,→ TN−k
+σ̂b̂j
+
+Where σ̂b̂2 = σ̂ 2 αjj (cf. supra).
+j
+
+Notice that when N → ∞, TN−k ∼ N(0, 1)
+11 / 64
+
+Formal proof
+
+Σû 2
+
+We know that σ̂ 2 = N−ki
+We thus get:
+σ̂ 2
+,→ χ2N−k
+σ2
+Proof: using the fact that u is normal and that û = MX u (see Dormont)
+Then, using the fact that b̂j ’s are normal and σ̂ 2 is a χ2 , we compute their ratio and end up
+with a Student distribution of parameter N − k.
+(N − k)
+
+12 / 64
+
+The test procedure: an example (1)
+
+Consider the following model:
+income = a + b.height + c.education, estimated over N individuals
+Suppose that the estimated parameter b̂ is close to zero
+We thus infer that variable height could be irrelevant: the correlation between income and
+height could (should) be zero
+The "true" b should be zero
+But even if it is the case, it is very unlikely that we get b̂ = 0 (due to intrisic randomness).
+Given the computed b̂, there should be a way to assess if the "true" b is in fact zero or not
+
+13 / 64
+
+The test procedure: an example (2)
+
+Let’s call H0 the hypothesis: b = 0, and H1 the hypothesis: b ̸= 0
+Should we consider H0 as true?
+We know that for this model, t = (b̂ − b)/σ̂b̂ → TN−3
+Is the latter still likely, if we were to assume H0 is true?
+Assuming H0 is true means that we assume b = 0, so that t simplifies to t = (b̂/σ̂b̂ )
+If under H0 , we find this value t = (b̂/σ̂b̂ ) to be unlikely to belong to a TN−3 distribution,
+then we will say that H0 was wrong
+Rejecting H0 ⇔ parameter b is significant
+Not rejecting H0 ⇔ parameter b is not significant
+
+14 / 64
+
+Illustration
+
+15 / 64
+
+A general test procedure
+H0 : b = 0
+H1 : b ̸= 0
+1 Find the value N − k
+2 Compute t = b̂/σ̂
+b̂
+∗
+3 Compare t with the 2.5% quantile of a T
+N−k distribution: t
+4 We take 2.5% because the distribution is symmetric: we want to know if the value t
+belongs to the 5% less probable values of the distribution, i.e. the first 2.5% or the last
+2.5%
+5 If |t| > |t ∗ | then H is rejected: parameter b is significantly different from 0 and thus
+0
+significant
+6 If not, H is not rejected: parameter b is not significantly different from 0 and thus not
+0
+significant
+7 Always mention the level of significance: here (and it is often the case): α = 5%
+8 If a variable is found to be non significant, we can remove it from the analysis
+The higher the t-statistic, the higher the significance.
+16 / 64
+
+An even more general test procedure
+
+H0 : b = a
+H1 : b ̸= a
+1
+
+Find the value N − k
+
+2
+
+Compute t = b̂−a
+σ̂
+
+3
+
+Compare t with the 2.5% quantile of a TN−k distribution: t ∗
+
+4
+
+If |t| > |t ∗ | then H0 is rejected: parameter b is significantly different from a
+
+5
+
+If not, H0 is not rejected: parameter b is not significantly different from a
+
+6
+
+Always mention the level of significance: here (and it is often the case): α = 5%
+
+b̂
+
+The higher the t-statistic, the higher the chance we are right in rejecting H0 .
+
+17 / 64
+
+Illustration
+
+18 / 64
+
+Is it very different?
+
+If N → ∞, all we’ve covered so far works well, because it works for any N
+But if know in advance we’ll only be using large samples, we can directly use large sample
+tests
+These are called asymptotic tests
+
+19 / 64
+
+Consistency of estimators
+
+We want to know what happens if the sample size becomes very large, i.e. when N → ∞. Call
+b̂N the estimate computed on a sample of size N.
+b̂N is consistent: plim(b̂N ) = b
+Proof:
+Consistency in quadratic mean implies consistency in probability
+Do we have E [(b̂N − b)(b̂N − b)′ ] = V (b̂N ) → 0?
+2
+
+′
+
+V (b̂N ) = σ 2 (X ′ X )−1 = σN ( XNX )−1
+The limit of which is 0.VX−1 = 0
+So we see a first advantage of working with large samples: estimates are consistent.
+
+20 / 64
+
+Distribution of estimators
+Estimators exhibit asymptotic normality : when N → ∞, we know that their distribution is a
+Normal, whatever the distribution of u’s (contrary to the finite sample case).
+Thanks to the Central Limit Theorem (CLT), we can derive the distribution of estimators when
+N → ∞. Call b̂N the estimate computed on a sample of size N.
+√
+b̂N is asymptotically normal: N(b̂N − b) → N(0, σ 2 VX−1 )
+σ 2 is the variance of error terms u
+√
+"Inflating" by N is needed, otherwise the variable would be degenerate (zero variance)
+Intuition:
+b̂N − b = (X ′ X )−1 u so that it is a linear combination of the u’s
+So that the CLT applies and gives a normal distribution when N → ∞
+
+21 / 64
+
+Test statistic
+In a large sample, σ̂b̂j is an almost perfect estimate of σb̂j
+σ̂b̂
+
+Formally, plim σ j = 1
+b̂j
+
+Plugging σ̂b̂j instead of σb̂j does not change the distribution, it stays a Normal
+∀j, tj =
+
+b̂j − bj
+,→ N(0, 1)
+σ̂b̂j
+
+So that tests are run directly using the Normal quantiles. That’s what happened indeed when
+we run finite-sample tests with large samples, because the Student distribution becomes a
+standard Normal when N → ∞.
+Notice that in Stata, only finite sample statistics are displayed (t)
+22 / 64
+
+Outline
+1
+
+2
+
+3
+
+4
+
+Tests
+Reminder: common distributions
+Tests in finite sample: the T-test
+Tests in large sample: the T-test
+Size, p-value, forecasting
+Size and power
+P-value
+Forecasting
+Usual tests: T and F
+Generalization of the T-test
+Simultaneous testing: the F-test
+Generalization of the F-test
+Testing for structural change
+Purpose
+Computation
+Non constant variances
+23 / 64
+
+Size and power of a test
+α = Type I error = P(H0 rejected|H0 is true)
+β = Type II error = P(H0 accepted|H1 is true)
+α is the size of a test: we are aware that we’ll make the wrong decision 100α% of the time
+α is also called the significance level
+1 − β is the power of a test: it indicates how powerful a test is in finding deviations from
+the null hypothesis H0
+1 − β = P(H0 rejected|H1 is true)
+Lowering α ⇒ increasing β (and reciprocally): there is a trade-off between the two
+Since we cannot minimize both, we set α as fixed (e.g. 5%) and try to find the test that
+minimizes β for this given α
+Minimizing β ⇔ maximizing the power of a test
+24 / 64
+
+Sample size
+
+Dropping a useful variable can lead to non consistent estimates, while keeping an
+unimportant variable only leads to loss in precision
+Say we set α = 0.01 with a small sample size: then estimates are likely to have a large
+variance
+So even if the true parameter is not zero, its t statistic is likely to be small, thus failing to
+reject H0 although it is false
+
+25 / 64
+
+Choosing the right test size
+
+In that case, we might remove from the analysis a relevant variable simply because we’ve
+been too stringent about the size of the test
+Since it is easier to control α than β, we usually set the value of α with respect to the
+sample size in order to have enough power (i.e. ability to discriminate H0 from the true
+value of the parameter)
+
+26 / 64
+
+Example
+
+Suppose we are testing the hypothesis b = 0, while the true value is b = 0.1
+The probability that we reject the null (H0 ) depends on the standard error of b̂, thus on
+the sample size
+The larger the sample, the smaller the standard error so the more likely we are to reject H0
+Type II errors thus become increasingly unlikely when sample size increases
+In a big sample; we can thus decrease the size of the test α: e.g. 1%
+Similarly, we can choose a size of 10% in small samples
+
+27 / 64
+
+Illustration
+
+28 / 64
+
+The p-value
+
+It is defined with respect to the test statistic t that we just computed
+Its definition is: pvalue = P(|X | > |t|) with X ,→ TT −k
+It tells where t is located in the Student distribution TT −k (more precisely, at which
+quantile)
+∗
+If pvalue < 0.05, it means that |t| lies above t2.5%
+
+It means that H0 is to be rejected
+Softwares provide the p-value, so that tests can be performed easily
+Stata provide p-values for all tests so that decision is made easy
+
+29 / 64
+
+Illustration
+
+30 / 64
+
+Remark
+
+Say we are testing b = 0, i.e. no impact of some variable on the outcome
+If we don’t reject H0 , it simply means that there is not enough evidence to reject H0
+But another study could possibly find enough evidence to reject it
+It’s why we must write: H0 can or cannot be rejected
+
+31 / 64
+
+Using the model to make a forecast
+
+Using the model y = Xb + u and estimating it on the period [1, N], how could we predict
+yT using any XT ?
+A natural prediction is: ŷT = XT′ b̂
+Notice that XT′ is a line vector, since in the matrix of observations, one line = one
+observation
+And the forecast error is: ê = yT − ŷT
+
+32 / 64
+
+The forecast error
+
+The "true" yT is: yT = XT′ b + uT
+The forecast error is thus: ê = XT′ (b − b̂) + uT
+uT is uncorrelated to the (ui )i∈[1,N] and to the X ′ s, so:
+E (ê) = 0: the forecast is unbiased
+V (ê) = E (ê 2 ) = σ 2 XT′ (X ′ X )−1 XT + σ 2
+Thus depends on:
+one term linked to model inaccuracy (σ 2 )
+another linked to the accuracy of b̂ (its variance σ 2 (X ′ X )−1 ) and the distance between XT
+and the X ′ s used for the estimation
+
+33 / 64
+
+The forecast interval
+
+IC95% = [ŷT − t
+
+q
+q
+σ̂ 2 XT′ (X ′ X )−1 XT + σ̂ 2 , ŷT + t σ̂ 2 XT′ (X ′ X )−1 XT + σ̂ 2 ]
+
+With t being the 2.5% quantile of the TN−k distribution (if N is large, it is approximately the
+2.5% quantile of the normal distribution: 1.96).
+
+34 / 64
+
+Outline
+1
+
+2
+
+3
+
+4
+
+Tests
+Reminder: common distributions
+Tests in finite sample: the T-test
+Tests in large sample: the T-test
+Size, p-value, forecasting
+Size and power
+P-value
+Forecasting
+Usual tests: T and F
+Generalization of the T-test
+Simultaneous testing: the F-test
+Generalization of the F-test
+Testing for structural change
+Purpose
+Computation
+Non constant variances
+35 / 64
+
+Testing a linear combination of parameters
+
+A T-test can be used to test a linear restriction of parameters, e.g. b1 + 2b2 = a
+For more than one linear restriction, we would need the Fisher test (see below)
+Variable (b̂1 + 2b̂2 ) does follow a Student distribution, since b̂1 and b̂1 do
+The test statistic would be: t = (b̂1σ̂+2b̂2 )−a
+b̂1 +2b̂2
+
+With σ̂b̂1 +2b̂2 being computed as the usual standard error of a sum of variables
+Hint: V (aX + bY ) = a2 V (X ) + b 2 V (Y ) + 2abcov (X , Y )
+
+36 / 64
+
+Example: Cobb Douglas function (1)
+
+Say we use a Cobb Douglas production function to describe the technology of N different firms.
+y is the output, K and L the inputs (capital and labor respectively). α and β are the output
+elasticities of K and L respectively. Ai is the total factor productivity of each firm (comprises
+firm-specific efficiency). Our goal is to estimate α and β. For each firm i:
+yi = Ai Kiα Lβi
+Taking the log on both sides (assuming no variable ever has value 0), we get:
+log (yi ) = log (Ai ) + αlog (Ki ) + βlog (Li )
+
+37 / 64
+
+Example: Cobb Douglas function (2)
+
+Say A is the average total factor productivity, with E (Ai ) = A, we can then write:
+log (yi ) = log (Ai ) − log (A) + log (A) + αlog (Ki ) + βlog (Li )
+And calling ui = log (Ai ) − log (A), we have E (ui ) = 0 and:
+log (yi ) = log (A) + αlog (Ki ) + βlog (Li ) + ui
+Which amounts to a classical linear model of the form y = a + bx + cz + u.
+
+38 / 64
+
+Example: Cobb Douglas function (3)
+
+Data taken from Greene, on 27 firms
+Estimation of a Cobb-Douglas production function
+Parameters of interest: α and β, the output elasticities
+If α = β ⇒ same elasticity for both factors
+If α + β = 1 ⇒ constant returns to scale
+You can use lincom to test for a single linear combination. For any number of linear
+combinations (including one), use the Fisher test with the more general command test, see
+below.
+
+39 / 64
+
+One-tailed tests
+
+We saw we could test b = any value a and follow the same procedure, that is not
+restricted to testing b = 0
+By default, softwares give the b = 0 test, but we can ask for any test we like
+So far, we implemented two-sided tests: b = 0 vs. b > 0 or b < 0
+We can run one-sided tests if relevant: e.g. b = 0 vs. b > 0, or b = a vs. b > a
+One-tailed tests are used if the results are interesting only if they turn out in one direction
+In practice, we would be using only one half of the test distribution
+One-tailed tests still posit H0 : b = a because the t statistic must be computed under
+some simple assumption H0 (assuming H0 : b < a would be too vague).
+
+40 / 64
+
+One-tailed tests: procedure
+
+Say we wish to compare parameter b to value a
+While testing H0 : b = a in the two-tailed test procedure, we get pvalue = x
+One-tailed tests still posit H0 : b = a, while H1 can either be b > a or b < a
+If b̂ > a, then:
+H1 : b > a leads to pvalue = x2
+H1 : b < a leads to pvalue = 1 − x2
+
+If b̂ < a, then:
+H1 : b > a leads to pvalue = 1 − x2
+H1 : b < a leads to pvalue = x2
+
+All this can be easily generalized to a linear restriction involving 2 parameters, e.g. b1 + b2 > 0
+
+41 / 64
+
+One-tailed tests: example
+
+Say we run an estimation on a large sample, and we want to compare parameter b to
+value 4
+b̂ = 3.8 and σ̂b̂ = 0.1
+The Student t-value is: 3.8−4
+0.1 = −2
+Testing H0 : b = 4 with the two-tailed procedure, we get pvalue = 0.046 = 4.6%
+Since b̂ < 4, then:
+Testing H1 : b > 4 leads to pvalue = 1 − 0.046
+= 0.977 = 97.7%
+2
+0.046
+Testing H1 : b < 4 leads to pvalue = 2 = 0.023 = 2.3%
+
+So b can be said to be not significantly greater than 4
+
+42 / 64
+
+Simultaneous testing
+
+We have b̂ ,→ N(b, σ 2 (X ′ X )−1 )
+Thus: b̂ − b ,→ N(0, σ 2 (X ′ X )−1 )
+Taking the quadratic form of these, "divided" by their variance matrix, we get a χ2k :
+(b̂ − b)′ [σ 2 (X ′ X )−2 ]−1 (b̂ − b)
+But σ is unknown
+In a large sample, no problem: we plug-in the estimated σ̂, and it still is a χ2k
+
+43 / 64
+
+Finite vs. large sample
+
+In a finite sample, replacing σ by its estimate σ̂ will change the distribution from a χ2k to a
+Fisher F(k,N−k)
+2
+
+Formally: we use (N − k) σσ̂2 which is a χ2N−k
+We compute their ratio, and get to a Fisher distribution
+Notice that in Stata, only finite sample statistics are displayed (F)
+
+44 / 64
+
+F-test continued
+
+f =
+
+(b̂ − b)′ (X ′ X )(b̂ − b)
+,→ F(k,N−k)
+(k σ̂ 2 )
+
+The testing procedure is the same as for the T-test:
+Assume H0 is true: that b̂ = b
+Compute f
+Check if it is likely that f belongs to a F(k,N−k) distribution
+If it is not, e.g. at the 5% level, say that H0 is not rejected at the 5% level
+
+45 / 64
+
+Remark on Stata output
+For a test for a single linear combination after a regression (test), Stata should give us a
+t statistic for a Student test
+Instead, we get a F statistic which is a Fisher test
+This is because Fisher tests are used to test any number of linear constraints, so they are
+used even if there is only one
+The square of a variable following a student T distribution is equal to a variable following
+a Fisher distribution, so Student and Fisher procedures are equivalent here
+/p
+Y1 ,→ Fp,q if: Y1 = ZZ21 /q
+with Z1 ,→ χ2p and Z2 ,→ χ2p
+Say p = q = 1: Y is the ratio of two normal variables squared
+Y2 ,→ Tn if: Y2 = qXZ with X ,→ N(0, 1) and Z ,→ χ2n
+n
+
+Say n = 1: Y2 is the ratio of two normal variables
+Hence Y1 = Y22
+So what Stata provides is just the square of a regular Student statistic
+If we really want a Student statistic: lincom
+46 / 64
+
+About simultaneous testing
+A F-test is about testing a group of parameters (here k parameters)
+Why couldn’t we use k T-tests instead?
+First, the global F-test takes into account possible correlation between parameters
+Second, even assuming that parameters are independent (which never happens), see the
+following example:
+Consider we have 20 parameters bi to test, each using a T-test of size a = 0.05 testing
+h0i : bi = 0 vs. h1i : bi ̸= 0
+Assume we want to run a global test, testing H0 : all the parameters are equal to 0 vs. H1 :
+at least one of them is not equal to 0, using the results of the previous T-tests
+What is the actual size of this global test?
+α = Type I error = P(H0 rejected|H0 is true)
+α = 1 − P(H0 accepted|H0 is true)
+α = 1 − P(all the h0i are accepted|they are true)
+α = 1 − (1 − a)20 = 1 − (1 − 0.05)20 ≈ 0.64
+47 / 64
+
+A generalization of the F-test (1)
+
+We may want to test only for a subset of parameters. In that case, we simply take the
+preceding formula with what concerns the q parameters in question:
+f = (β̂ − β)′ [Z /(qσ̂ 2 )](β̂ − β) ,→ F(q,N−k)
+β: subset of parameters tested
+q: number of parameters tested (= no. of constraints)
+Z −1 : submatrix of (X ′ X )−1 corresponding to the q coefficients
+The default test b = 0 (except constant term) is always given by softwares: it is a general
+test of the model, called the global F-test
+
+48 / 64
+
+A generalization of the F-test (2)
+
+We may want to test for some linear constraints (ex: b1 = b2 and b3 = b4 )
+We have to rewrite these q constraints in a matrix form: Rb = r
+The test statistic is the following:
+f =
+
+1
+(R b̂ − r )′ (σ̂ 2 R(X ′ X )−1 R ′ )−1 (R b̂ − r ) ,→ F(q,N−k)
+q
+
+49 / 64
+
+How to implement this? (1)
+
+In fact, all this amounts to testing whether the full model is better or not than the model
+with constraints
+2 the R 2 of the non constrained model, and R 2 the R 2 of the constrained
+Let’s call Rnc
+c
+model
+
+It can be shown that:
+f =
+
+2 − R 2) N − k
+(Rnc
+c
+·
+,→ F(q,N−k)
+2
+1 − Rnc
+q
+
+With N: sample size, k: no. of variables, q: no. of constraints
+
+50 / 64
+
+How to implement this? (2)
+
+Call SSR the sum of the squared residuals
+df the degrees of freedom of models
+c: constrained, nc: non constrained models
+It can be shown that:
+f =
+
+dfnc
+(SSRc − SSRnc )
+·
+,→ F(dfc −dfnc ,dfnc )
+SSRnc
+dfc − dfnc
+
+51 / 64
+
+How to select variables
+Choose to use variables in levels, logs or growth rates using economic theory, variable
+plots, tests or common sense
+Detect perfect multicollinearity and remove it
+Then, 3 options:
+Backward elimination: estimate the model with all the variables and remove those that are
+not significant (T then F tests)
+Forward regression: begin with only one explanatory variable, the one that is the most
+correlated to the dependent variable, then introduce the other ones one by one according
+to their partial correlation coefficient with y , while they are significant
+Stepwise regression: same process, and at each step variables that cease to be significant
+are removed (Stata: stepwise)
+No automatic procedure can replace common sense
+52 / 64
+
+Outline
+1
+
+2
+
+3
+
+4
+
+Tests
+Reminder: common distributions
+Tests in finite sample: the T-test
+Tests in large sample: the T-test
+Size, p-value, forecasting
+Size and power
+P-value
+Forecasting
+Usual tests: T and F
+Generalization of the T-test
+Simultaneous testing: the F-test
+Generalization of the F-test
+Testing for structural change
+Purpose
+Computation
+Non constant variances
+53 / 64
+
+The Chow test
+It could be relevant to test whether parameters are the same on 2 subsamples of the data
+Ex: are consumer behaviors the same before and after the German reunification? Idea:
+test the temporal stability of the regression
+Ex: are the parameters of a wage equation the same for men and women? Idea: test
+homogeneity of behaviors
+Since we are testing a set of parameters simultaneously, we use a F test
+The constrained model is the one where parameters are forced to be the same on the two
+subsamples
+The non-constrained model is the one where parameters are allowed to differ across the
+two subsamples
+The test will tell us if we can or cannot reject homogeneity of behaviors
+
+54 / 64
+
+1st method
+Let’s call SSR the sum of squared residuals
+SSRc : of the constrained model
+SSR1 : of the model estimated on the 1st subsample
+SSR2 : of the model estimated on the 2nd subsample
+Consequence: SSRnc = SSR1 + SSR2 is in fact SSR of the non constrained model
+F =
+
+(SSRc − SSRnc )/k
+SSRnc /(N − 2k)
+
+And F ,→ F (k, N − 2k)
+Rmk 1: this method requires the estimation of 3 models
+Rmk 2: this is the same as the formula with the constrained and non constrained R 2
+
+55 / 64
+
+2nd method
+We can run the Chow test by estimating one single model, using interacted variables
+Say we use the following model, for each observation i:
+yi = b0 + b1 x1,i + b2 x2,i + ... + bk−1 xk−1,i + ui
+Create a dummy Ii with value 1 if observation i belongs to the 1st subsample, and 0
+otherwise
+For each explanatory variable xj,i , create a variable zj,i = xj,i ∗ Ii
+In other words, if i belongs to the 1st subsample, zj = xj and otherwise zj = 0
+Run the following "augmented" regression:
+yi = b0 + b1 x1,i + b2 x2,i + ... + bk−1 xk−1,i + a0 I + a1 z1,i + a2 z2,i + ... + ak−1 zk−1,i + ui
+Parameters are the same across the 2 subsamples if adding these new variables doesn’t
+improve the initial model
+In other words, the Chow test amounts here to testing if the new parameters aj are all
+simultaneously zero
+56 / 64
+
+Two remarks
+
+The 2 methods presented here are totally equivalent
+Implicitly, this test assumes that the variance of the error term is the same in the two
+subsamples, while it is not always the case (see later)
+If the second subsample is too small (less observations than variables), we can’t run this
+test because there is no way to estimate the model on the small subsample. In that case,
+we use the CUSUM test (see later)
+
+57 / 64
+
+Variance of error terms not constant
+
+Parameters could differ across 2 sub periods, so could the variance of the error terms
+If it’s the case, then it can be shown that we overestimate the size of the test, i.e. we
+reject too often the hypothesis of homogeneity of behaviors
+The Chow test needs to be adjusted in that case
+The fact that error terms can have a non constant variance is called heteroskedasticity,
+and will be studied later
+
+58 / 64
+
+Test of equality of variances
+We deal with subsamples 1 and 2, calling T1 and T2 their size and k the number of
+variables in the model
+Assume u1 ,→ N(0, σ12 ) and u2 ,→ N(0, σ22 )
+We assume a constant variance within each subsample, while σ1 et σ2 are not necessarily
+equal
+û2′ û2
+û1′ û1
+2
+,→
+χ
+and
+,→ χ2T2 −k
+2
+T
+−k
+1
+σ1
+σ22
+We know that the ratio of two χ2 , each divided by its parameter, gives a Fisher distribution
+
+We thus have:
+
+Under the null hypothesis H0 where σ1 = σ2 , this ratio is thus:
+C=
+
+û1′ û1
+û ′ û2
+σ̂ 2
+/ 2
+= 12 ,→ F (T1 − k, T2 − k)
+T1 − k T2 − k
+σ̂2
+
+59 / 64
+
+Remark
+
+Subsamples 1 and 2 are apparently interchangeable
+In practice, we can compute two test statistics: one > 1 and the other < 1, because there
+will always be one variance greater than the other
+We commonly use the statistic that is > 1 (otherwise we’ll never reject H0 )
+
+60 / 64
+
+Consequence on the Chow test
+Assume we proved that σ1 ̸= σ2
+Let’s use the ratio w = σσ12
+If we multiply the second sample’s model by w , we manage to make the variances of the
+error terms the same for the two models
+Ex: y2 = a2 + b2 x2 + u2 with V (u2 ) = σ22 becomes:
+w .y2 = w .a2 + w .b2 x2 + w .u2 , with the variance of the new error term:
+V (w .u2 ) = ( σσ12 )2 σ22 = σ12
+Since we don’t know the "true" w because we don’t know the "true" σ1 and σ2 , we
+replace them by their estimate, computed when running the variance equality test
+I.e.: ŵ = σ̂σ̂21
+
+61 / 64
+
+What if the second subsample is too small
+Ex: the second subperiod is too short (T2 < k). We can still run this test, with the following
+adjustments:
+The model is estimated on the first subperiod (y1 = X1 .b1 + u1 ) to get parameters b̂1
+Comparing prediction X2 .b̂1 and observation y2 is a way of testing whether model 1 is still
+valid on period 2
+More precisely, we test if the prediction error has expectancy zero
+Calling SSRc and SSR1 the sum of squared residuals on model constrained and 1
+respectively, and T1 and T2 the sizes of samples 1 and 2, the following statistic can be
+used to run a Chow test:
+(
+
+SSR1
+SSRc − SSR1
+) ,→ F (T2 , T1 − k)
+)/(
+T2
+T1 − k
+
+62 / 64
+
+Remark
+
+The idea of the Chow test is to compare the constrained vs. the non constrained model
+Estimating a model with more variables than observations provides non unique parameters
+If N < k, then the projection of y is itself, so all residuals are zero
+That’s why we eventually get a formula close to the usual Chow test, where SSR2 would
+be zero
+
+63 / 64
+
+Choosing a breakpoint in a time series
+Unless we know a specific event happened, finding a breakpoint is not obvious
+This is the purpose of the CUSUM (cumulated sum) test
+Stata command: cusum6, to install from the web (ssc install cusum6 )
+Method: analyze the prediction of yt computed with the parameters of the model
+estimated on the first t − 1 periods
+The test will "begin" at date t=k+1 at the earliest
+If the regression is stable with time, then the expectancy of the forecast error is 0
+We plot the graph of the cumulated sum of these so-called recursive residuals against
+time, and if the model is stable with time it must stay within some confidence bounds
+For more details, see Cadoret et al., chapter 3.
+
+64 / 64
+
+

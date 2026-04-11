@@ -1,0 +1,56 @@
+FICHE – STATISTIQUE & ÉCONOMÉTRIE (VERSION CONCEPTUELLE)
+CORRÉLATION
+Relation entre deux variables.
+Mesure descriptive.
+Ne dépend pas d’un modèle.
+N’est pas un problème statistique en soi.
+COLINÉARITÉ
+Relation linéaire entre plusieurs variables explicatives.
+Problème du modèle, pas des données seules.
+Rend les coefficients instables et difficiles à interpréter.
+VIF (VARIANCE INFLATION FACTOR)
+Indicateur de colinéarité.
+Mesure l’inflation de la variance d’un coefficient.
+Outil de diagnostic, pas un test.
+HOMOSCÉDASTICITÉ
+Variance constante des erreurs.
+Nécessaire pour des tests statistiques fiables.
+Sa violation affecte l’inférence mais pas le biais.
+ENDOGÉNÉITÉ
+Corrélation entre une variable explicative et l’erreur.
+Causes possibles : variable omise, causalité inverse, erreur de mesure.
+Entraîne des coefficients biaisés.
+VARIABLE INSTRUMENTALE
+Variable utilisée pour corriger l’endogénéité.
+Doit être corrélée avec la variable endogène.
+Doit être indépendante de l’erreur.
+Une VI non valide aggrave le biais.
+TEST DE STUDENT (t)
+Teste un coefficient à la fois.
+Outil d’inférence, pas de prédiction.
+TEST DE FISHER (F)
+Teste plusieurs coefficients simultanément.
+Évalue la significativité globale du modèle.
+P-VALUE
+Mesure la compatibilité avec l’hypothèse nulle.
+Dépend fortement de la taille de l’échantillon.
+Ne mesure pas la taille de l’effet.
+RMSE
+Mesure l’erreur moyenne de prédiction.
+Indicateur prédictif.
+Même unité que la variable cible.
+R2
+Mesure la part de variance expliquée.
+Indicateur descriptif.
+Ne garantit ni causalité ni performance hors échantillon.
+
+RIDGE
+Méthode de régularisation.
+Réduit la variance, introduit du biais.
+Ne corrige pas l’endogénéité.
+BOOTSTRAP
+Méthode de ré-échantillonnage.
+Estime l’incertitude sans hypothèses fortes.
+Ne corrige pas un mauvais modèle.
+
+

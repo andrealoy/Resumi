@@ -1,0 +1,32 @@
+ENCADRÉ — POURQUOI RIDGE POUR LA PRÉDICTION ?
+Objectif de la dernière partie
+
+- Objectif strictement prédictif.
+- Minimisation de l’erreur hors échantillon.
+- L’interprétation des coefficients n’est plus prioritaire.
+Pourquoi Ridge est adapté
+
+-
+
+Échantillon de taille modérée.
+Variables explicatives corrélées mais pas colinéaires.
+Toutes les variables ont un sens économique.
+Ridge conserve toute l’information disponible.
+
+Mécanisme de Ridge
+
+- Ajout d’une pénalisation sur la taille des coefficients.
+- Réduction de la variance des prédictions.
+- Introduction volontaire d’un biais contrôlé.
+Pourquoi pas Lasso ici
+
+- Pas de besoin de sélection automatique de variables.
+- Risque d’instabilité avec des variables corrélées.
+- Pas de gain prédictif observé dans ce contexte.
+Message clé à l’oral
+
+- Changement d’objectif implique changement de méthode.
+- Ridge est optimal dans une logique de prédiction.
+- Le biais est acceptable car il améliore la généralisation.
+
+

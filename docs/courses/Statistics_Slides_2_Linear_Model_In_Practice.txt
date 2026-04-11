@@ -1,0 +1,383 @@
+Econometrics Part 2
+The linear model in practice
+
+Jose Angel Garcia Sanchez
+jagarsanc@gmail.com
+Sorbonne Data Analytics
+
+November 2025
+
+1 / 25
+
+Outline
+
+1
+
+Multicollinearity
+
+2
+
+Handling categories
+
+3
+
+Omitted variables
+
+4
+
+Predictions in logs
+
+5
+
+Influential observations
+
+2 / 25
+
+Multicollinearity
+
+This problem arises if some variable is equal to an exact linear combination of some other
+variables (e.g. if we have variables like income, income after tax and tax)
+This variable is unnecessary because it contains repetitive information
+Worse, it prevents the computation of the OLS estimator, since X is no longer full rank
+and we cannot compute b̂ = (X ′ X )−1 X ′ y
+If the software detects multicollinearity, it arbitrarily removes one repetitive variable
+
+3 / 25
+
+Near multicollinearity
+
+This problem arises if some variable is almost equal to an exact linear combination of some
+other variables
+In other words, it means that they are very strongly correlated
+We can compute b̂ = (X ′ X )−1 X ′ y
+But : b̂ is very unstable and the estimator is not very reliable (great variance)
+
+4 / 25
+
+How to detect near multicollinearity
+The VIF (Variance Inflation Factor) indicates by how much the variance of a parameter bi
+is inflated due to the correlation of variable Xi with all the other explanatory variables
+Python command : from statsmodels.stats.outliers_influencers import
+variance_inflation_factor
+Say our model has k variables : constant, X1 , X2 , ... Xk−1
+Python will run the regression of each Xi on all the other Xj ’s, save its R 2 called Ri2
+Example : X1 = a1 + a2 X2 + ... + ak−1 Xk−1 + ε
+1
+Next, VIF for each variable i is computed as : VIFi = 1−R
+2
+i
+
+One can prove that in the original regression
+y = b0 + b1 X1 + ... + bk−1 Xk−1 :
+σ2
+V (b̂j ) = (N−1)Var
+(Xj ) VIFj
+VIFi > 5 indicates a high risk of multicollinearity between variable i and the other variables
+If you don’t see any big issue, do not remove variables : risk of omitted variable bias (see
+below)
+5 / 25
+
+Dummy variables : 2 categories
+Let’s say we have N individual observations providing income, gender and the number of
+years of education.
+We want to explain individual income y by education x and gender z :
+yi = a + b.xi + c.zi + ui .
+z is a categorical variable, ideally coded with 0/1
+Say z = 1 codes for males
+c represents the extra money that provides the fact of being a male with respect to being
+a female
+It would be irrelevant to have a male and a female variable because it would cause exact
+multicollinearity (besides the fact that it is unnecessary)
+Remark : setting a categorical variable as the dependent variable needs other type of
+modeling, such as Probit and Logit (see later chapters)
+6 / 25
+
+Dummy variables : more than 2 categories
+Let’s say we have N individual observations providing an index of life satisfaction, income
+and type of environment (big city, small city, rural ), respectively coded with values 1, 2
+and 3.
+We want to explain life satisfaction y by income x and environment z
+z is still a categorical variable, but we have 3 categories : we have to choose a category
+with respect to which parameters will be computed, say rural
+The model should be written :
+yi = a + b.xi + c1 .z1i + c2 .z2i + ui , with z1 and z2 are dummy variables that code for big
+city and small city respectively
+These dummy variables should be created by hand or through pandas
+Python command : pd.get_dummies(df[’environment’], drop_first=True) or
+using statsmodels formula with C(environment)
+Do not keep original coding (1, 2, 3), which would be meaningless in a regression
+7 / 25
+
+Dummy variables : outliers
+
+Let’s say we have N observations for a country that experienced a shock.
+We want to explain life expectancy y by number of doctors per capita x :
+yt = a + b.xt + ut .
+Let’s say that the shock took place on year i : this unusual observation is likely to bias the
+whole regression, but we don’t want to delete it
+We will take this event into account with a dummy variable :
+Dt = 1 if t = i, Dt = 0 otherwise.
+The model is now written : yt = a + b.xt + c.Dt + ut .
+c represents the impact of the shock
+
+8 / 25
+
+Omitted variable bias
+
+It can be easily understood that estimating the previous model with and without dummy
+D can lead to changes even in parameters a and b
+Omitting a relevant variable (here D) leads to omitted variable bias that affects all
+estimated parameters
+Proof : in the finite sample case with the Frish-Waugh theorem (see Dormont), and proof
+involving consistency in later chapters (on endogeneity)
+This is a very important issue in applied work, so try not to forget important variables in
+models
+
+9 / 25
+
+The Frish-Waugh theorem
+
+Let Z be a vector of variables.
+MZ is the orthogonal projection matrix on L⊥ (Z ).
+Let’s define 2 models :
+1
+2
+
+y = Xb(i) + Zc + u
+MZ y = MZ Xb(ii) + MZ u.
+
+The Frish-Waugh theorem states that b̂(i) = b̂(ii)
+Important consequence : estimating the model with both sets of variables X and Z or
+with X alone will not provide the same results.
+This is called the "omitted variable bias"
+On which condition will results be the same ?
+
+10 / 25
+
+Answer
+
+Estimating the model with both sets of variables X and Z or with X alone will yield the
+same results only if vectors X and Z are perpendicular, i.e. totally uncorrelated
+i.e. X ′ Z = 0
+Which is quite unlikely
+
+11 / 25
+
+A side effect of the FW theorem : centered variables
+
+Estimating the simple model yt = a + b.xt + ut with or without centering observations
+(i.e., replacing each value yi by yi − ȳ , same for x) will give the same result for b̂.
+Centering observations will make the constant unnecessary
+
+12 / 25
+
+Advantages of using logs
+
+1
+
+Taking the log of the dependent variable can make the residuals look more "normal"
+
+2
+
+It can as well reduce heteroskedasticity
+
+3
+
+Parameters can be interpreted as percentages or elasticities that can be of interest
+
+13 / 25
+
+About the log transformation
+
+The average predicted y should be equal to the average observed y
+Here, we can compute a prediction of log (y )
+Can we get back to raw predicted wage simply by taking the exponential of the predicted
+y in log ?
+
+14 / 25
+
+Log and predictions (1)
+
+Let’s use model ∀i, log (yi ) = a + bxi + ui (what matters is that we take the log of y )
+Taking the exponential :
+yi = exp(a + bxi + ui ) = exp(a + bxi ).exp(ui )
+So if the u’s are independent from the x’s, we get :
+E [yi ] = E [exp(a + bxi ).exp(ui )] = E [exp(a + bxi )].E [exp(ui )]
+We usually consider the x’s as fixed, so :
+E [yi ] = exp(a + bxi ).E [exp(ui )]
+A prediction for y is thus : ŷi = exp(â + b̂xi ).Ê [exp(ui )],
+But how to estimate Ê [exp(ui )] (the retransformation parameter) ?
+
+15 / 25
+
+Log and predictions (2)
+
+2
+
+It can be proven that if u ,→ N(0, σ 2 ), then E [exp(ui )] = exp( σ2 )
+2
+This can be estimated using exp( σ̂2 ) = Ψ̂
+We thus have : ŷi = exp(â + b̂xi ).Ψ̂
+To get back to levels when using a prediction in log s, we cannot simply take the exponential of
+the prediction : there is an additional retransformation parameter to take into account.
+The preceding formula holds only if the u’s are normal : if their distribution is unknown but
+homoscedastic (same variance), we can use the non-parametric1 smearing estimator :
+ûi )
+Ψ̂ = Σexp(
+N
+
+1
+
+Because no assumptions on the type of distribution
+16 / 25
+
+Are all observations given the same weight ?
+We have :
+
+P
+(xi − x̄)(yi − ȳ )
+P
+b̂1 =
+(xi − x̄)2
+
+So :
+
+P
+i −ȳ )
+X (yi − ȳ )
+(xi − x̄)2 (y
+(xi −x̄)
+P
+b̂1 =
+=
+pi
+(xi − x̄)2
+(xi − x̄)
+2
+
+Calling pi = P(x(xi −x̄)
+2.
+i −x̄)
+(yi −ȳ )
+(xi −x̄) is the slope of the line drawn from the point corresponding to individual i to the sample
+
+average, and pi is an increasing function of (xi − x̄).
+Estimate b̂1 is thus highly influenced by extreme points (see Anscombe’s quartet of identical
+regressions).
+
+17 / 25
+
+Outliers (1)
+
+Outlier : observation with a large residual compared to other observations
+They indicate poor goodness of fit
+How to detect them : using a residuals plot
+Goal : estimate how far the observed value is from the predicted value
+Or more rigorously : using the studentized residuals, that adjust for the leverage of that
+particular point
+
+18 / 25
+
+Outliers (2)
+Outliers are observations that have a large residual
+However, if the observation is highly influential, it has pulled the predicted value towards
+itself
+In other words, the variances of the residuals differ, even though the variances of the true
+errors are all equal to each other
+Consequence : need for studentization
+The studentized residuals adjust for the leverage of that particular point (see what h is
+below)
+ûi
+rstudi = √
+σ̂ 1 − hi
+
+19 / 25
+
+Leverage (1)
+
+High leverage observation : has an explanatory variable that takes a value very different
+from the sample mean
+In a simple regression model, could be (for example) at the far right and would influence
+the slope of the regression line
+How to detect them : the "hat statistic"
+
+20 / 25
+
+Leverage (2)
+
+We know that ŷ = PX y
+PX can be called the "hat" matrix (puts a hat on y )
+Let’s call hi the i th element of the diagonal of the hat matrix
+hi is the leverage of observation i : if it is large, then observation i has a high leverage
+0 < hi < 1
+
+21 / 25
+
+Leverage (3)
+
+We know that û = (I − PX )u, so V (û) = σ 2 (I − PX )
+So : V (ûi ) = σ 2 (1 − hi )
+The greater the leverage hi , the smaller the variance of the residual for observation i
+Meaning : high leverage observations tend to bring the regression line close to them
+High leverage observations are not necessarily influential, but low leverage observations
+won’t be influential
+(xi −x̄)
+For the simple linear model : hi = N1 + Σ(x
+2
+i −x̄)
+
+22 / 25
+
+Influence measures (1)
+Influential observation : if removed from the regression, estimated parameters vary a lot
+How to detect them : the Dfbeta statistic
+For every variable k, its Dfbeta measures how much its coefficient would change if we
+removed one observation
+Every Dfbeta possible is computed, and the software provides its maximum and minimum
+The change in b̂k if observation i is dropped is :
+Dfbetai,k =
+
+b̂k − b̂k,(−i)
+σ̂k,(−i)
+
+with b̂k,(−i) and σ̂k,(−i) computed without observation i. It represents the number of se’s by
+which the b̂k changes when observation i is removed.
+23 / 25
+
+Influence measures (2)
+
+Dffit : measures how much the prediction for observation i changes when the estimation is
+made without observation i
+ŷ −ŷi,(−i)
+√
+(−i) hi
+
+Dffit = σ̂i
+
+Covratio statistic : measures the change in the determinant of the covariance matrix of
+the estimates by deleting the ith observation (indicates loss in precision)
+Cook’s distance : measures the influence of observation i on the model as a whole, not on
+a single coefficient (it combines all the Dfbeta’s)
+Di =
+
+(b̂−b̂(−i) )′ (X ′ X )(b̂−b̂(−i) )
+k σ̂ 2
+
+24 / 25
+
+Cutoffs
+
+Leverage hi of observation i : h̄ = k/N, 0 ≤ hi ≤ 1. If for observation i, hi > h̄ then it
+might be influential.
+Changepin predicted value Dffit : observation i is influential if |Dffiti | > 2 (general cutoff)
+or > 2 k/N
+Change in a parameter
+Dfbeta : observation i is influential if |Dfbetak,i | > 2 (general
+√
+cutoff) or > 2/ N (adj. for large sample)
+Impact on the whole model (Cook’s distance D) : observation i is influential if Di > 1
+"Covratio" statistic : observation i is influential if |covratio − 1| > 3k/N
+
+25 / 25
+
+

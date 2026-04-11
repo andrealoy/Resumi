@@ -1,0 +1,660 @@
+Econometrics Part 4
+Heteroskedasticity and Autocorrelation
+
+Jose Angel Garcia Sanchez
+jagarsanc@gmail.com
+Sorbonne Data Analytics
+
+November 2025
+
+1 / 32
+
+Outline
+
+1
+
+Generalized least squares
+
+2
+
+Heteroskedasticity
+
+3
+
+Autocorrelation
+
+2 / 32
+
+Outline
+
+1
+
+Generalized least squares
+
+2
+
+Heteroskedasticity
+
+3
+
+Autocorrelation
+
+3 / 32
+
+What if assumptions do not hold?
+
+Heteroskedasticity: error terms do not have the same variance (ex: size effect for firms) →
+mostly cross sections
+Autocorrelation: error term from period t is correlated to error term of period t − 1,
+and/or t − 2 ... → mostly time series
+In that case, V (u) ̸= σ 2 IN : OLS are still unbiased but less precise. Furthermore, all the tests
+we derived are not valid any more since they rely on homoskedasticity assumptions. We thus
+have to modify the estimation to make a reliable assessment on parameter values.
+
+4 / 32
+
+The problem with OLS
+
+Let’s use the following model: y = Xb + u
+Assume that V (u) = σ 2 Ω, with Ω any suitable matrix (must be symmetric and positive
+definite)
+E (b̂ols ) = b: still unbiased
+But V (b̂ols ) = σ 2 (X ′ X )−1 X ′ ΩX (X ′ X )−1
+If we run an OLS regression with a software, we will get b̂ computed as b̂ = (X ′ X )−1 X ′ y
+(right) but V̂ (b̂) computed as V̂ (b̂) = σ̂ 2 (X ′ X )−1 (wrong)
+The software will thus give us unbiased estimates, but wrong variances, so all the tests we
+may run are wrong (T-test, F-test)
+
+5 / 32
+
+How can we correct for these problems?
+
+We need to transform the model so as to get homoskedastic and independent error terms
+We can use generalized least squares, that will replace ordinary least squares
+We will eventually end up re-weighting the model with the help of the variance matrix of
+error terms
+
+6 / 32
+
+Generalized least squares
+
+Let’s use the following model: y = Xb + u
+Assume that V (u) = σ 2 Ω
+Ω is symmetric and positive definite, so Ω−1 exists and Ω−1/2 exists as well
+Ω−1/2 Ω−1/2 = Ω−1
+Let’s multiply the model on the left handside by Ω−1/2 : Ω−1/2 y = Ω−1/2 Xb + Ω−1/2 u
+The error terms of this "new" model are homoskedastic and uncorrelated:
+V (Ω−1/2 u) = σ 2 IN
+We can use the transformed model for the estimation of b and most of all for inference
+
+7 / 32
+
+The GLS estimator
+
+Using OLS on the transformed model, we get the GLS estimator
+b̂gls = (X ′ Ω−1 X )−1 X ′ Ω−1 y
+It is obtained by minimizing the sum of squared residuals weighted by Ω−1
+GLS are unbiased
+The "true" variance that can be used for tests is the following: V (b̂gls ) = σ 2 (X ′ Ω−1 X )−1
+Notice that the transformed model does not necessarily have a meaning: it is only useful
+for the estimation procedure
+
+8 / 32
+
+Using GLS
+
+Since GLS amounts to OLS computed on a model that has nice properties, we can implement
+all the tests we described earlier (T-test, F-test)
+
+9 / 32
+
+The FGLS estimator
+
+GLS have nice properties
+The problem is however that we do not know the true Ω: we thus have to use an
+estimator of Ω and we thus turn to the feasible generalized least squares FGLS
+We cannot compute all the variances and covariances for the N error terms, since we have
+N observations
+We’ll have to estimate these variances and covariances in some way (see later)
+
+10 / 32
+
+Remarks
+
+FGLS is an estimate of true GLS
+When sample size goes to infinity, estimation becomes almost perfect
+So FGLS and GLS are asymptotically equivalent
+FGLS have good properties only asymptotically
+FGLS are usually biased with a small sample
+Thus, in small samples, we cannot be sure that FGLS outperform OLS
+
+11 / 32
+
+Outline
+
+1
+
+Generalized least squares
+
+2
+
+Heteroskedasticity
+
+3
+
+Autocorrelation
+
+12 / 32
+
+Heteroskedasticity
+
+Heteroskedasticity usually occurs with cross sections
+Let’s assume error terms are uncorrelated but do not have the same variance (ex:
+households with very different income levels)
+The variance matrix of error terms is a diagonal matrix σ 2 Ω
+Is it thus easy to compute Ω−1
+This is sometimes called the Weighted Least Squares estimator (WLS) because each
+observation is weighted proportionally to the inverse of the standard error of its
+corresponding error term
+It is as if we put a smaller weight on high-income households
+
+13 / 32
+
+Re-weighting matrix
+
+
+
+a1 0 · · ·
+ 0 a2 · · ·
+
+Ω=.
+.. . .
+ ..
+.
+.
+0 0
+0
+
+
+
+0
+1/a1
+0
+···
+
+
+0
+1/a2 · · ·
+ 0
+−1
+..  so Ω =  ..
+..
+..
+ .
+.
+. 
+.
+aN
+0
+0
+0
+
+0
+0
+..
+.
+
+
+
+
+
+
+
+1/aN
+
+And the re-weighting matrix is:
+ √
+0
+···
+1/ a1
+√
+ 0
+1/
+a
+2 ···
+
+Ω−1/2 =  .
+.
+..
+..
+ ..
+.
+0
+0
+0
+
+
+0
+0 
+
+.. 
+. 
+√
+1/ aN
+
+14 / 32
+
+Testing for heteroskedasticity
+
+First, simply looking at residuals
+Then, various tests are available
+Breusch-Pagan test: regress the squared residuals on all the explanatory variables
+White test: regress the squared residuals on all the explanatory variables raw, squared, and
+their cross-products
+If we find some parameters significantly different from 0, then we conclude there is
+heteroskedasticity
+We will eventually use these regressions to estimate Ω and lead the weighted regression
+
+15 / 32
+
+Weighted least squares in practice (1)
+
+Let’s consider a heteroskedastic model y = Xb + u
+The variance matrix of error terms is a diagonal with N unknown elements V (ui )
+Assume that V (u) depends on variables X : V (u) = σ 2 · exp(X γ) (we drop i’s)
+The exponential ensures everything is always positive
+The squared residuals are the empirical counterparts of the error variances because
+V (ui ) = E (ui2 )
+So this equation becomes empirically: û 2 = σ 2 · exp(X γ) so that log(û 2 ) = X γ + constant
+The error variances can now be estimated
+
+16 / 32
+
+Weighted least squares in practice (2)
+
+What to do:
+1
+
+Estimate the original regression y = Xb + u with OLS, save residuals, compute their square
+
+2
+
+Using plots or any other method, pick the right X ’s for the auxiliary regression:
+log(û 2 ) = X γ + constant
+
+3
+
+Compute the predicted residual squared from the auxiliary regression (need to get back to
+levels from logs)
+
+4
+
+For each individual i, divide every term of the original model by the square root of that
+prediction
+
+5
+
+Run OLS on transformed data
+
+17 / 32
+
+Should we always use FGLS?
+
+FGLS do not have nice small sample properties, while OLS do
+But using OLS gives us wrong standard errors for estimates
+We could use OLS and compute corrected standard errors for them
+So we can keep OLS estimates because they are unbiased and consistent, and use the
+White (1980) matrix to run tests only
+That’s what most people do
+
+18 / 32
+
+The White matrix
+
+White (1980) proved that a consistent estimator for the variance matrix of parameters is:
+N
+X
+V̂ (b̂ols ) = (X ′ X )−1 (
+ût2 Xt Xt′ )(X ′ X )−1
+t=1
+
+Where the û’s are the residuals from the OLS regression.
+This matrix can be used as an estimate of the true variance of OLS estimators, and thus for
+tests. They are called "White" or "robust" standard errors (because they are robust to
+heteroskedasticity), and can be computed directly by softwares (option "robust").
+
+19 / 32
+
+Outline
+
+1
+
+Generalized least squares
+
+2
+
+Heteroskedasticity
+
+3
+
+Autocorrelation
+
+20 / 32
+
+Autocorrelation
+
+Error term from period t is correlated to error term of period t − 1, and/or t − 2 ...
+Focus here on first-order autocorrelation: ut = ρut−1 + εt
+Where |ρ| < 1 and ε is a "white noise"
+"White noise" means ∀t, E (εt ) = 0 and V (εt ) = σε , all εt uncorrelated to each other and
+to u’s
+
+21 / 32
+
+First-order autocorrelation
+
+The variance of error terms σ 2 Ω is no longer a diagonal matrix because Ω is no longer the
+identity matrix:
+
+
+1
+ρ
+ρ2
+· · · ρN−1
+ ρ
+1
+ρ
+· · · ρN−2 
+
+
+Ω= .
+.
+.
+.. 
+.
+.
+.
+.
+.
+ .
+.
+.
+.
+. 
+ρN−1 ρN−2 ρN−3 · · ·
+
+1
+
+2
+
+σε
+And we have: E (ut ) = 0, V (ut ) = σ 2 = 1−ρ
+2.
+
+The correlation coefficient between ut−h and ut is ρ|h| .
+
+22 / 32
+
+Testing for first-order autocorrelation
+Durbin-Watson test: H0 : ρ = 0 vs. H1 : ρ ̸= 0
+Test statistic:
+PN
+DW =
+
+2
+t=2 (ût − ût−1 )
+PN
+2
+t=1 ût
+
+And
+DW ≈ 2(1 − ρ̂)
+The Durbin-Watson table gives us two values d1 and d2 such that:
+DW ∈ [0, d1 ] ⇒ ρ > 0
+DW ∈ [d1 , d2 ] ⇒ inconclusive
+DW ∈ [d2 , 4 − d2 ] ⇒ ρ = 0
+DW ∈ [4 − d2 , 4 − d1 ] ⇒ inconclusive
+DW ∈ [4 − d1 , 4] ⇒ ρ < 0
+Requisites: the model needs a constant term; in the explanatory variables, we can’t have the
+23 / 32
+dependent variable lagged
+
+The Breusch-Godfrey test
+
+This test is used to detect autocorrelation > 1 and works even when the dependent
+variable lagged belongs to the explanatory variables
+Run OLS on the model
+Save residuals et
+Estimate the auxiliary regression explaining et as a linear function of explanatory variables
++p previous residuals
+Under the null (parameters of previous residuals simultaneously equal to zero),
+(N − p) · R 2 follows a χ2 distribution of parameter p
+In the test, the R 2 used is the one from the auxiliary regression
+
+24 / 32
+
+What to do if we find autocorrelation
+
+The finding of autocorrelation often means that the model is misspecified
+We thus should not directly switch from OLS to FGLS, but rather try to change the model
+Ex: include as explanatory variable the dependent variable lagged (y from previous period),
+switch from x to log(x), use variables expressed as growth rates instead of levels, etc.
+
+25 / 32
+
+FGLS in the case of autocorrelation
+
+If modifying the model doesn’t help, we have to correct for autocorrelation using FGLS,
+just as we did in the case of heteroskedasticity
+We will use "quasi-differencing"
+
+26 / 32
+
+Reminder: first-order autocorrelation
+
+
+1
+ρ
+..
+.
+
+ρ
+1
+..
+.
+
+ρ2
+ρ
+..
+.
+
+···
+···
+..
+.
+
+
+
+Ω=
+
+ρN−1 ρN−2 ρN−3 · · ·
+
+
+ρN−1
+ρN−2 
+
+.. 
+. 
+1
+
+So we know the form of Ω−1 :
+
+
+1
+−ρ
+0
+···
+−ρ 1 + ρ2
+−ρ
+·
+··
+1 
+2
+0
+−1
+−ρ
+1
++
+ρ
+·
+·
+·
+Ω =
+
+1 − ρ2  ..
+..
+..
+.
+..
+ .
+.
+.
+0
+0
+0
+··· − ρ
+
+
+0
+0
+
+0
+
+.. 
+.
+1
+
+27 / 32
+
+The FGLS transforming matrix
+
+We can find a matrix Γ such that (1 − ρ2 )Ω−1 = Γ′ Γ with:
+p
+1 − ρ2 0 0
+···
+ −ρ
+1
+0
+·
+··
+
+
+0
+−ρ 1
+···
+Γ=
+
+.
+.
+.
+..
+..
+..
+..
+
+.
+0
+
+0
+
+
+0
+0
+
+0
+
+.. 
+.
+0 ··· − ρ 1
+
+And the FGLS transformed model is written as: Γy = ΓXb + Γu.
+
+28 / 32
+
+The transformed model
+
+The FGLS transformed model is written as: Γy = ΓXb + Γu
+p
+In the new model, y1 is replaced by ( 1 − ρ2 )y1 and all the other outcome variables yi
+are replaced by yi − ρyi−1
+Same for each independent variable xj including the constant
+Except for the 1st observation, all observations are "quasi-differenced"
+yi − ρyi−1 = b0 (1 − ρ) + b1 (x1,i − ρx1,i−1 ) + ... + εi
+∀i > 1, ui − ρui−1 = εi which is a white noise: now regular OLS can be used on this new
+model
+The last thing we need to run the regression is an estimate of ρ, ρ̂
+
+29 / 32
+
+Estimation: the two-step method
+
+1
+
+Run original OLS regression y = Xb + u,
+
+2
+
+Save residuals ûi
+
+3
+
+Estimate ρ by ρ̂ =
+
+4
+
+Quasi-difference the model using ρ̂
+
+5
+
+Then run OLS on the transformed model
+
+P
+û û
+P i 2i−1
+ûi−1
+
+30 / 32
+
+Estimation: the iterative method
+
+Cochrane-Orcutt or Prais-Winsten method
+1
+
+Run the two-step method once, save ρ̂1 and b̂1
+
+2
+
+From OLS on the (already) transformed model, save estimated parameters and compute
+residuals
+
+3
+
+Use these residuals to compute a new ρ̂, ρ̂2
+
+4
+
+Repeat until two successive ρ̂’s are sufficiently close to each other
+
+31 / 32
+
+Last, what if we have both autocorrelation and heteroskedasticity?
+
+We may use a generalization of the White variance matrix if we have both
+heteroskedasticity and autocorrelation that could not be corrected for
+It is used when we assume that the correlation between the u’s is zero after some lag
+We get the so-called Newey-West standard errors, that are heteroskedasciticy and
+autocorrelation consistent
+
+32 / 32
+
+

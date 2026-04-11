@@ -1,0 +1,2023 @@
+Statistics for Applications
+Course Notes
+
+Based on lectures by
+Jose Angel Garcia Sanchez
+Université Paris 1 Panthéon-Sorbonne
+
+Sorbonne Data Analytics
+November 2025
+
+Statistics for Applications
+
+Course Notes
+
+Contents
+1 Course Overview
+1.1 Goals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+1.2 Learning Outcomes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+4
+4
+4
+
+2 Why Statistics?
+2.1 Historical Applications . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+2.1.1 Hydrology (Netherlands, 10th century) . . . . . . . . . . . . . . .
+2.1.2 Insurance . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+2.1.3 Clinical Trials . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+2.2 The Common Thread: Randomness . . . . . . . . . . . . . . . . . . . . .
+
+4
+4
+4
+4
+5
+5
+
+3 Probability vs Statistics
+3.1 Probability: Working Forward . . . . . . . . . . . . . . . . . . . . . . . .
+3.2 Statistics: Working Backward . . . . . . . . . . . . . . . . . . . . . . . .
+3.3 Contrasting Probability and Statistics . . . . . . . . . . . . . . . . . . . .
+
+5
+5
+6
+6
+
+4 A Practical Example: The Kissing Study
+4.1 Research Question . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.2 Study Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.3 Initial Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.4 Formal Statistical Framework . . . . . . . . . . . . . . . . . . . . . . . .
+4.5 Statistical Model Assumptions . . . . . . . . . . . . . . . . . . . . . . . .
+4.6 Discussion of Assumptions . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.6.1 Assumption 1: Randomness . . . . . . . . . . . . . . . . . . . . .
+4.6.2 Assumption 2: Bernoulli Distribution . . . . . . . . . . . . . . . .
+4.6.3 Assumption 3: Independence . . . . . . . . . . . . . . . . . . . . .
+
+7
+7
+7
+7
+8
+8
+8
+8
+8
+8
+
+5 Mathematical Tools for Statistical Inference
+5.1 Laws of Large Numbers . . . . . . . . . . . . . . . . . . . . . . . . . . .
+5.2 The Central Limit Theorem - Detailed Treatment . . . . . . . . . . . . .
+5.2.1 Formal Statement . . . . . . . . . . . . . . . . . . . . . . . . . . .
+5.2.2 Key Insights and Interpretation . . . . . . . . . . . . . . . . . . .
+5.2.3 Detailed Application to the Kissing Study . . . . . . . . . . . . .
+5.2.4 Constructing Confidence Intervals from the CLT . . . . . . . . . .
+5.2.5 Numerical Examples . . . . . . . . . . . . . . . . . . . . . . . . .
+5.2.6 Requirements and Conditions for the CLT . . . . . . . . . . . . .
+5.2.7 Visualizing the Central Limit Theorem . . . . . . . . . . . . . . .
+5.2.8 Connection to Other Fundamental Results . . . . . . . . . . . . .
+5.2.9 Beyond the Classical CLT: Extensions . . . . . . . . . . . . . . .
+5.2.10 Practical Guidelines for Using the CLT . . . . . . . . . . . . . . .
+5.2.11 Common Misconceptions . . . . . . . . . . . . . . . . . . . . . . .
+5.2.12 Summary: Why the CLT is Fundamental . . . . . . . . . . . . . .
+5.3 Application to the Kissing Study . . . . . . . . . . . . . . . . . . . . . .
+5.3.1 Consequences of LLN . . . . . . . . . . . . . . . . . . . . . . . . .
+5.3.2 Consequences of CLT . . . . . . . . . . . . . . . . . . . . . . . . .
+5.4 Confidence Intervals . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+9
+9
+9
+9
+9
+10
+11
+12
+13
+14
+14
+15
+15
+16
+16
+16
+16
+17
+17
+
+1
+
+Statistics for Applications
+
+Course Notes
+
+5.4.1 Derivation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+5.4.2 Conservative Approach . . . . . . . . . . . . . . . . . . . . . . . .
+5.4.3 Numerical Example . . . . . . . . . . . . . . . . . . . . . . . . . .
+5.4.4 Small Sample Caution . . . . . . . . . . . . . . . . . . . . . . . .
+Hoeffding’s Inequality . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+5.5.1 Confidence Interval from Hoeffding . . . . . . . . . . . . . . . . .
+
+17
+17
+18
+18
+18
+18
+
+6 Types of Convergence
+6.1 Almost Sure Convergence . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.2 Convergence in Probability . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.3 Convergence in Lp . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.4 Convergence in Distribution . . . . . . . . . . . . . . . . . . . . . . . . .
+6.5 Characterizations of Convergence in Distribution . . . . . . . . . . . . .
+6.6 Extensions to Random Vectors . . . . . . . . . . . . . . . . . . . . . . . .
+6.7 Hierarchy of Convergence . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.8 Continuous Mapping Theorem . . . . . . . . . . . . . . . . . . . . . . . .
+6.9 Operations with Limits . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.9.1 Almost Sure and Probability Convergence . . . . . . . . . . . . .
+6.9.2 Warning About Convergence in Distribution . . . . . . . . . . . .
+
+19
+19
+19
+19
+20
+20
+20
+20
+21
+21
+21
+21
+
+7 Another Example: Metro Arrival Times
+7.1 Problem Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.2 Modeling Assumptions . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.3 Discussion of Assumptions . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.3.1 Mutual Independence . . . . . . . . . . . . . . . . . . . . . . . . .
+7.3.2 Exponential Distribution . . . . . . . . . . . . . . . . . . . . . . .
+7.3.3 Common Parameter . . . . . . . . . . . . . . . . . . . . . . . . .
+7.4 Estimation Strategy . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.5 Asymptotic Properties . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.5.1 Consistency . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.5.2 Asymptotic Normality of Sample Mean . . . . . . . . . . . . . . .
+
+21
+21
+22
+22
+22
+22
+22
+23
+23
+23
+23
+
+8 The Delta Method
+8.1 Statement of the Delta Method . . . . . . . . . . . . . . . . . . . . . . .
+8.2 Intuition . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+8.3 Application to Metro Example . . . . . . . . . . . . . . . . . . . . . . . .
+8.4 Attempting a Confidence Interval . . . . . . . . . . . . . . . . . . . . . .
+8.5 Two Solutions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+8.5.1 Solution 1: Algebraic Manipulation . . . . . . . . . . . . . . . . .
+8.5.2 Solution 2: Slutsky’s Theorem . . . . . . . . . . . . . . . . . . . .
+
+23
+24
+24
+24
+25
+25
+25
+26
+
+9 Slutsky’s Theorem
+9.1 Statement . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+9.2 Application to Metro Example . . . . . . . . . . . . . . . . . . . . . . . .
+9.3 Confidence Interval Using Slutsky . . . . . . . . . . . . . . . . . . . . . .
+9.4 Revisiting the Kissing Study . . . . . . . . . . . . . . . . . . . . . . . . .
+
+26
+26
+26
+27
+27
+
+5.5
+
+2
+
+Statistics for Applications
+
+Course Notes
+
+10 Summary and Key Takeaways
+10.1 Statistical Thinking Framework . . . . . . . . . . . . . . . . . . . . . . .
+10.2 Fundamental Distinction: Probability vs. Statistics . . . . . . . . . . . .
+10.3 Essential Mathematical Tools . . . . . . . . . . . . . . . . . . . . . . . .
+10.4 Convergence Concepts . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+10.5 Confidence Intervals . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+10.6 Practical Considerations . . . . . . . . . . . . . . . . . . . . . . . . . . .
+10.7 Next Steps . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+3
+
+28
+28
+28
+28
+29
+29
+30
+30
+
+Statistics for Applications
+
+1
+
+Course Overview
+
+1.1
+
+Goals
+
+Course Notes
+
+The primary objectives of this course are:
+• To provide a solid introduction to the mathematical theory behind statistical methods
+• To offer theoretical guarantees for the statistical methods used in various applications
+
+1.2
+
+Learning Outcomes
+
+By the end of this class, you will be able to:
+1. Formulate real-life situations as statistical problems in mathematical terms
+2. Select appropriate statistical methods for your specific problem
+3. Understand the implications and limitations of various statistical methods
+
+2
+
+Why Statistics?
+
+Statistics has been essential across diverse fields throughout history. Understanding randomness and making decisions under uncertainty are fundamental challenges that appear
+in numerous contexts.
+
+2.1
+
+Historical Applications
+
+2.1.1
+
+Hydrology (Netherlands, 10th century)
+
+When building dams and dykes, engineers faced the following problem:
+• Dams should be high enough to prevent most floods
+• Dams should not be excessively expensive (i.e., not too high)
+This requires understanding the distribution of flood heights and making probabilistic
+guarantees.
+2.1.2
+
+Insurance
+
+Modern insurance relies heavily on statistical modeling:
+• Given a person’s driving record, car information, and desired coverage
+• What constitutes a fair premium?
+
+4
+
+Statistics for Applications
+2.1.3
+
+Course Notes
+
+Clinical Trials
+
+Medical research depends on rigorous statistical analysis:
+• A drug is tested on 100 patients
+• 56 patients were cured, 44 showed no improvement
+• Question: Is the drug effective, or could these results occur by chance?
+
+2.2
+
+The Common Thread: Randomness
+
+Central Concept
+All these examples share a fundamental characteristic: RANDOMNESS
+Key questions arising from randomness include:
+• Notion of average (“fair premium”, expected flood height, . . . )
+• Quantifying chance (“most of the floods”, probability of cure, . . . )
+• Assessing significance and variability
+
+3
+
+Probability vs Statistics
+
+3.1
+
+Probability: Working Forward
+
+Definition 3.1 (Probability). Probability studies randomness when the underlying physical process is completely known.
+In some cases, the random mechanism is perfectly understood: dice, cards, roulette,
+fair coins, etc.
+Example
+Example 1: Rolling 1 Die
+Consider the following game:
+• Alice gets 1€ if the number of dots ≥ 3
+• Bob gets 2€ if the number of dots ≤ 2
+• Question: Who do you want to be: Alice or Bob?
+Analysis:
+• Alice wins with probability 4/6 = 2/3, expected value = 1 × 2/3 = 0.67€
+• Bob wins with probability 2/6 = 1/3, expected value = 2 × 1/3 = 0.67€
+Both have the same expected value, so the game is fair!
+
+5
+
+Statistics for Applications
+
+Course Notes
+
+Example
+Example 2: Rolling 2 Dice
+• Choose a number between 2 and 12
+• Win 100€ if you correctly predict the sum of the two dice
+• Which number should you choose?
+Solution: The sum 7 has the highest probability (6/36), as it can be obtained in
+the most ways: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1).
+Key Insight: In probability, we know the random process (e.g., 1/6 chance for each
+face, dice are independent), and we deduce the probability of outcomes and expected
+amounts.
+
+3.2
+
+Statistics: Working Backward
+
+Statistics becomes necessary when dealing with more complicated processes where:
+• We need to estimate parameters from data
+• True randomness exists (random sampling, biased coins, measurement error)
+• Phenomena are deterministic but too complex to model exactly (statistical modeling)
+Fundamental Modeling Principle
+Complicated process = Simple process + Random noise
+Good modeling consists of choosing a plausible simple process and an appropriate
+noise distribution.
+
+3.3
+
+Contrasting Probability and Statistics
+
+Example
+Probability Perspective:
+“Previous studies showed that the drug was 80% effective. Then we can anticipate
+that for a study on 100 patients, on average 80 will be cured and at least 65 will
+be cured with 99.99% probability.”
+Statistics Perspective:
+“We observe that 78/100 patients were cured. We conclude (with appropriate
+methods) that we are 95% confident that for other studies the drug will be effective
+on between 69.88% and 86.11% of patients.”
+Key Distinction:
+• Probability: Known mechanism → Predict outcomes
+6
+
+Statistics for Applications
+
+Course Notes
+
+• Statistics: Observed outcomes → Infer mechanism
+
+4
+
+A Practical Example: The Kissing Study
+
+4.1
+
+Research Question
+
+Study Question
+Study Question: “Does a neonatal right-side preference make a surprising romantic reappearance later in life?”
+
+4.2
+
+Study Design
+
+Let p denote the proportion of couples that turn their head to the right when kissing.
+Experimental Design:
+1. Observe n kissing couples
+2. Collect the outcome for each couple (1 for RIGHT, 0 for LEFT)
+3. Estimate p with the sample proportion p̂
+Actual Study:
+• Source: “Human behaviour: Adult persistence of head-turning asymmetry” (Nature,
+2003)
+• Sample size: n = 124 couples
+• Observed: 80 couples turned right
+80
+• Sample proportion: p̂ = 124
+= 64.5%
+
+4.3
+
+Initial Analysis
+
+Observation: 64.5% is notably larger than 50%, suggesting a preference for turning
+right.
+Critical Questions:
+• What if our data was RIGHT, RIGHT, LEFT (n = 3)? That’s 66.7% to the right.
+Even better?
+• Intuitively, we need a large enough sample size n to make reliable conclusions
+• How large is “large enough”?
+Important Note
+Key Question: We need mathematical modeling to understand the accuracy of
+this estimation procedure.
+
+7
+
+Statistics for Applications
+
+4.4
+
+Course Notes
+
+Formal Statistical Framework
+
+For i = 1, . . . , n, define random variables:
+(
+1 if the i-th couple turns to the right
+Ri =
+0 otherwise
+The estimator of p is the sample average:
+n
+
+1X
+Ri
+p̂ = R̄n =
+n i=1
+Question: What is the accuracy of this estimator?
+To answer this, we propose a statistical model that describes/approximates the experiment well.
+
+4.5
+
+Statistical Model Assumptions
+
+1. Each Ri is a random variable
+2. Each Ri ∼ Ber(p) (Bernoulli distribution with parameter p)
+3. R1 , . . . , Rn are mutually independent
+
+4.6
+
+Discussion of Assumptions
+
+4.6.1
+
+Assumption 1: Randomness
+
+Randomness is a way of modeling lack of information. With perfect information about:
+• The conditions of kissing
+• What goes on in the kissers’ minds
+• Physical positioning
+Physics or sociology would theoretically allow us to predict the outcome deterministically. Since we lack this information, we model the outcome as random.
+4.6.2
+
+Assumption 2: Bernoulli Distribution
+
+Since Ri ∈ {0, 1}, each Ri is necessarily a Bernoulli random variable.
+More general model: We could assume Ri ∼ Ber(pi ) with different parameters for
+each couple.
+Problem: We don’t have enough information to estimate all the pi ’s accurately.
+Simplification: We assume pi = p for all i (homogeneity assumption).
+4.6.3
+
+Assumption 3: Independence
+
+The independence assumption is reasonable because:
+• People were observed at different locations
+• Observations occurred at different times
+• There’s no obvious mechanism for dependence between couples
+8
+
+Statistics for Applications
+
+Course Notes
+
+5
+
+Mathematical Tools for Statistical Inference
+
+5.1
+
+Laws of Large Numbers
+
+Key Theorem
+Laws of Large Numbers (Weak and Strong)
+Let X, X1 , X2 , . . . , Xn be i.i.d. random variables with µ = E[X] and σ 2 = Var[X] <
+∞.
+Define the sample mean:
+n
+1X
+Xi
+X̄n :=
+n i=1
+Then:
+• Weak LLN: X̄n −
+→µ
+P
+
+a.s.
+
+• Strong LLN: X̄n −−→ µ
+Interpretation:
+• The sample average converges to the true mean
+• As n increases, our estimate becomes increasingly accurate
+• For the kissing study: R̄n → p, so p̂ is a “consistent” estimator
+
+5.2
+
+The Central Limit Theorem - Detailed Treatment
+
+5.2.1
+
+Formal Statement
+
+Key Theorem
+Central Limit Theorem (CLT)
+Let X, X1 , X2 , . . . , Xn be i.i.d. random variables with µ = E[X] and σ 2 = Var[X] <
+∞.
+Then:
+√ X̄n − µ (d)
+−→ N (0, 1)
+n
+σ
+Equivalently:
+√
+(d)
+n(X̄n − µ) −→ N (0, σ 2 )
+P
+where X̄n = n1 ni=1 Xi is the sample mean.
+5.2.2
+
+Key Insights and Interpretation
+
+What the CLT Tells Us
+1. Asymptotic Normality: Regardless of the original distribution of X, the normalized sample mean converges to a normal distribution. This is remarkable because
+X could follow any distribution (exponential, uniform, Bernoulli, etc.) as long as
+it has finite variance.
+9
+
+Statistics for Applications
+
+Course Notes
+
+√
+2. Rate of Convergence: The difference (X̄n − µ) decreases at rate 1/ n:
+• To halve the error, you need 4 times as many samples
+• To achieve 10× better accuracy, you need 100× more data
+√
+• The standard error is σ/ n
+3. Universal Result: The CLT is a universal phenomenon that works for ANY
+distribution with finite variance. This universality is what makes it so powerful in
+practice.
+4. Foundation for Inference: Provides the theoretical basis for:
+• Confidence intervals
+• Hypothesis testing
+• Standard errors and margin of error calculations
+Alternative Formulation
+The CLT can be rewritten in a more intuitive form. For large n:
+
+
+σ2
+X̄n ≈ N µ,
+n
+Interpretation:
+• The sample mean is approximately normally distributed
+• Centered at the true mean µ
+• With variance that shrinks as 1/n
+√
+• The standard deviation (standard error) is σ/ n
+This approximation becomes more accurate as n increases.
+5.2.3
+
+Detailed Application to the Kissing Study
+
+Setup
+Recall: Ri ∼ Ber(p) for i = 1, . . . , n, where:
+• Mean: µ = E[Ri ] = p
+• Variance: σ 2 = Var[Ri ] = p(1 − p)
+Applying the CLT
+The Central Limit Theorem gives us:
+√
+
+R̄n − p (d)
+np
+−→ N (0, 1)
+p(1 − p)
+
+Let Φ denote the CDF of the standard normal distribution N (0, 1). For any x > 0
+and large n:
+"
+#
+R̄n − p
+P p
+≤ x ≈ 2Φ(x) − 1
+p(1 − p)/n
+10
+
+Statistics for Applications
+Equivalently:
+
+Course Notes
+
+"
+
+r
+
+P |R̄n − p| ≤ x
+
+#
+
+p(1 − p)
+≈ 2Φ(x) − 1
+n
+
+Key observation: This tells us √
+how R̄n concentrates around p. The concentration
+interval has width proportional to 1/ n.
+5.2.4
+
+Constructing Confidence Intervals from the CLT
+
+General Approach
+For a confidence level 1 − α (where α ∈ (0, 1)), let qα/2 denote the (1 − α/2)-quantile
+of N (0, 1).
+Common values:
+• For 90% confidence: α = 0.10, so q0.05 = 1.645
+• For 95% confidence: α = 0.05, so q0.025 = 1.96
+• For 99% confidence: α = 0.01, so q0.005 = 2.576
+From the CLT, with probability approximately 1 − α when n is large:
+X̄n − µ
+√
+≤ qα/2
+σ/ n
+Rearranging:
+
+
+
+σ
+σ
+µ ∈ X̄n − qα/2 √ , X̄n + qα/2 √
+n
+n
+
+
+
+Important Note
+The Fundamental Problem:
+This confidence interval depends on the unknown parameter σ (or p in the Bernoulli
+case). We cannot use this directly because we don’t know the true value of the
+parameter we’re trying to estimate!
+Solution 1: Conservative Bounds
+For the Bernoulli case, we can use the fact that:
+p(1 − p) ≤
+
+1
+4
+
+for all p ∈ [0, 1]
+
+The maximum occurs at p = 1/2. Therefore:
+r
+p(1 − p)
+1
+≤ √
+n
+2 n
+This gives a conservative confidence interval that holds with probability at least 1−α:
+
+
+qα/2
+qα/2
+p ∈ R̄n − √ , R̄n + √
+2 n
+2 n
+Trade-off: This interval is wider than necessary (conservative), but it doesn’t depend
+on the unknown p.
+11
+
+Statistics for Applications
+
+Course Notes
+
+Solution 2: Plug-in Estimator with Slutsky’s Theorem
+A more efficient approach uses Slutsky’s Theorem (discussed in Section 9).
+P
+Since R̄n −
+→ p, by the continuous mapping theorem:
+q
+p
+P
+R̄n (1 − R̄n ) −
+→ p(1 − p)
+By Slutsky’s Theorem:
+√
+R̄n − p
+(d)
+np
+−→ N (0, 1)
+R̄n (1 − R̄n )
+This leads to a narrower, more efficient confidence interval:
+#
+"
+r
+r
+R̄n (1 − R̄n )
+R̄n (1 − R̄n )
+, R̄n + qα/2
+p ∈ R̄n − qα/2
+n
+n
+5.2.5
+
+Numerical Examples
+
+Example 1: Kissing Study with n = 124
+Data: n = 124 couples, p̂ = 80/124 = 0.645
+For 95% confidence (α = 0.05, q0.025 = 1.96):
+Conservative interval:
+1.96
+= 0.645 ± 0.088 = [0.557, 0.733]
+0.645 ± √
+2 124
+Efficient interval (Slutsky):
+r
+0.645 × 0.355
+0.645 ± 1.96
+= 0.645 ± 0.084 = [0.561, 0.729]
+124
+Interpretation: We are approximately 95% confident that the true proportion of
+right-turning couples is between 56.1% and 72.9%. Since the entire interval is above
+50%, we have statistical evidence that couples prefer turning right.
+Example 2: Warning About Small Samples (n = 3)
+Data: n = 3 couples, p̂ = 2/3 = 0.667
+Naive CLT-based interval:
+1.96
+0.667 ± √ = 0.667 ± 0.566 = [0.101, 1.233]
+2 3
+Important Note
+Critical Problem: The interval exceeds the valid range [0, 1] for a probability!
+This demonstrates that the CLT is not valid for such small samples. The
+asymptotic approximation is extremely poor when n is too small.
+For small samples, alternative methods must be used:
+• Exact binomial confidence intervals
+• Hoeffding’s inequality (non-asymptotic)
+• Bootstrap methods
+12
+
+Statistics for Applications
+5.2.6
+
+Course Notes
+
+Requirements and Conditions for the CLT
+
+Essential Requirements
+1. Independence: The random variables X1 , . . . , Xn must be mutually independent
+2. Identical Distribution: All variables must follow the same distribution
+3. Finite Variance: The variance σ 2 = Var[X] must be finite (i.e., σ 2 < ∞)
+Remark 5.1. These conditions can be relaxed in more advanced versions of the CLT:
+• Lindeberg-Feller CLT: Allows for non-identical distributions under certain conditions
+• Lyapunov CLT: Alternative conditions for non-identical distributions
+• Dependent case: Extensions exist for certain types of dependence (e.g., mixing
+conditions)
+However, the classical CLT with i.i.d. assumptions is the most commonly used in practice.
+When is n "Large Enough"?
+The CLT is an asymptotic result (n → ∞), but in practice we work with finite
+samples.
+General guidelines:
+• Rule of thumb: n ≥ 30 is often cited as sufficient for the CLT approximation
+• Depends on the original distribution:
+– Symmetric distributions: CLT works well even for smaller n (perhaps n ≥ 15)
+– Highly skewed distributions: May need n ≥ 50 or even larger
+– Distributions with heavy tails: Require larger n
+– Nearly normal distributions: CLT approximation good even for small n
+• Bernoulli case: CLT approximation is reasonable when np(1 − p) ≥ 10
+Example
+Assessing CLT Validity
+For Bernoulli(p) variables:
+• If p = 0.5 (symmetric): n = 20 might suffice
+• If p = 0.1 or p = 0.9 (skewed): need larger n, perhaps n ≥ 50
+• If p = 0.01 (highly skewed): need very large n, perhaps n ≥ 100
+The condition np(1 − p) ≥ 10 helps ensure the normal approximation is reasonable.
+
+13
+
+Statistics for Applications
+5.2.7
+
+Course Notes
+
+Visualizing the Central Limit Theorem
+
+Key Visualization Concepts
+Consider the distribution of X̄n for increasing values of n:
+• Small n: The distribution of X̄n resembles the original distribution of X
+• Moderate n: The distribution begins to look more bell-shaped
+• Large n: The distribution is approximately normal, centered at µ, with variance
+σ 2 /n
+Important observations:
+1. The center stays at µ for all n
+√
+2. The spread decreases as n increases (proportional to 1/ n)
+3. The shape becomes increasingly normal
+5.2.8
+
+Connection to Other Fundamental Results
+
+Relationship with Law of Large Numbers
+LLN vs CLT
+Law of Large Numbers:
+• Tells us: X̄n → µ (convergence)
+• Answers: "Does the sample mean converge?"
+• Type of convergence: Almost sure or in probability
+Central Limit Theorem:
+• Tells us: How fast and in what manner X̄n → µ
+• Answers: "How is the sample mean distributed?" and "How fast does it
+converge?"
+• Type of convergence: In distribution (to normal)
+Relationship: The CLT provides a refinement of the LLN by quantifying the rate
+and distributional form of convergence.
+Foundation for the Delta Method
+The CLT provides the starting point for the Delta Method (Section ??), which
+extends asymptotic normality to smooth transformations of estimators.
+√
+(d)
+If n(X̄n − µ) −→ N (0, σ 2 ) by the CLT, then for a differentiable function g:
+√
+
+(d)
+
+n(g(X̄n ) − g(µ)) −→ N (0, [g ′ (µ)]2 σ 2 )
+
+This allows us to study nonlinear estimators like λ̂ = 1/X̄n in the metro example.
+14
+
+Statistics for Applications
+5.2.9
+
+Course Notes
+
+Beyond the Classical CLT: Extensions
+
+Multivariate Central Limit Theorem
+For random vectors X = (X1 , . . . , Xd )T ∈ Rd with mean µ and covariance matrix Σ:
+√
+(d)
+n(X̄n − µ) −→ N (0, Σ)
+This extends all our inference methods to multivariate settings.
+Functional Central Limit Theorem
+Also known as Donsker’s Theorem, this extends the CLT to function spaces, providing
+the foundation for studying stochastic processes.
+Berry-Esseen Theorem
+Provides explicit bounds on the rate of convergence in the CLT:
+
+√
+n(X̄n − µ)
+CE[|X − µ|3 ]
+√
+≤ x − Φ(x) ≤
+sup P
+σ
+σ3 n
+x
+where C is a universal constant (approximately 0.4748).
+√
+Implication: The error in the CLT approximation decreases at rate O(1/ n).
+5.2.10
+
+Practical Guidelines for Using the CLT
+
+1. Check assumptions:
+• Verify independence (or understand dependence structure)
+• Confirm finite variance
+• Assess whether sample size is adequate
+2. Assess adequacy of normal approximation:
+• Use diagnostic plots (Q-Q plots, histograms)
+• Consider the shape of the original distribution
+• Apply corrections for small samples if needed
+3. Interpret results correctly:
+• Confidence intervals have frequentist interpretation
+• The approximation improves with larger n
+• Results are approximate, not exact
+4. Consider alternatives for small samples:
+• Exact methods (when available)
+• Non-asymptotic concentration inequalities
+• Bootstrap methods
+• Permutation tests
+
+15
+
+Statistics for Applications
+5.2.11
+
+Course Notes
+
+Common Misconceptions
+
+Important Note
+Misconception 1: "The CLT says the data becomes normally distributed."
+Correction: The CLT says the sample mean (or sum) becomes approximately
+normal. The individual data points retain their original distribution.
+Misconception 2: "I need n ≥ 30 regardless of the distribution."
+Correction: The rule n ≥ 30 is a rough guideline. The required sample size
+depends heavily on the original distribution’s shape.
+Misconception 3: "The CLT applies to any statistic."
+Correction: The classical CLT specifically applies to sample means. Other statistics may or may not be asymptotically normal (though many are, under appropriate
+conditions).
+Misconception 4: "Larger n always means the CLT works better."
+Correction: While true asymptotically, if model assumptions (independence, identical distribution) are violated, increasing n won’t fix the problem.
+5.2.12
+
+Summary: Why the CLT is Fundamental
+
+The Central Limit Theorem is arguably the most important result in statistics because:
+1. Universality: Works for any distribution with finite variance
+2. Normality: Explains why normal distributions appear so frequently in practice
+3. Practical inference: Provides the foundation for confidence intervals and hypothesis tests
+4. Rate quantification: Tells us how estimation error decreases with sample size
+5. Asymptotic theory: Serves as the building block for more sophisticated statistical
+methods
+The CLT, together with the Law of Large Numbers, forms the mathematical foundation for understanding why statistical inference works and provides quantitative tools for
+practical data analysis.
+
+5.3
+
+Application to the Kissing Study
+
+5.3.1
+
+Consequences of LLN
+
+The Laws of Large Numbers tell us that:
+a.s.
+
+R̄n −
+→ p and R̄n −−→ p
+P
+
+Hence, when the sample size n becomes large, R̄n is a good (“consistent”) estimator
+of p.
+16
+
+Statistics for Applications
+5.3.2
+
+Course Notes
+
+Consequences of CLT
+
+Let:
+• Φ(x) = CDF of N (0, 1)
+√
+• Φn (x) = CDF of n √R̄n −p
+
+p(1−p)
+
+The CLT states: Φn (x) ≈ Φ(x) when n becomes large.
+Hence, for all x > 0:
+#
+"
+r
+p(1 − p)
+≈ 2Φ(x) − 1
+P |R̄n − p| ≤ x
+n
+This provides an approximation of how R̄n concentrates around p.
+
+5.4
+
+Confidence Intervals
+
+5.4.1
+
+Derivation
+
+For a fixed confidence level α ∈ (0, 1), let qα/2 be the (1 − α/2)-quantile of N (0, 1).
+Then, with probability ≈ 1 − α (when n is large enough):
+"
+#
+r
+r
+p(1 − p)
+p(1 − p)
+p ∈ R̄n − qα/2
+, R̄n + qα/2
+n
+n
+Problem: This interval depends on the unknown parameter p!
+5.4.2
+
+Conservative Approach
+
+Note that for any p ∈ [0, 1]:
+p(1 − p) ≤
+
+1
+4
+
+The maximum occurs at p = 1/2.
+Hence, roughly with probability at least 1 − α:
+
+
+qα/2
+qα/2
+p ∈ R̄n − √ , R̄n + √
+2 n
+2 n
+Definition 5.2 (Asymptotic Confidence Interval). When n becomes large, the interval
+
+
+qα/2
+qα/2
+R̄n − √ , R̄n + √
+2 n
+2 n
+contains p with probability ≈ 1 − α. This is called an asymptotic confidence interval
+for p at level 1 − α.
+
+17
+
+Statistics for Applications
+5.4.3
+
+Course Notes
+
+Numerical Example
+
+For the kissing study with n = 124, p̂ = 0.645, and α = 0.05:
+• q0.025 = 1.96 (the 97.5th percentile of standard normal)
+1.96
+• Confidence interval: 0.645 ± 2√
+= [0.56, 0.73]
+124
+
+Interpretation: We are approximately 95% confident that the true proportion of
+right-turning couples is between 56% and 73%.
+Note: Since the entire interval is above 50%, we have evidence that couples tend to
+turn right when kissing.
+5.4.4
+
+Small Sample Caution
+
+For the extreme case with n = 3 and p̂ = 2/3:
+1.96
+0.667 ± √ = [0.10, 1.23]
+2 3
+Problem: The CLT is not valid for such small samples! The interval even exceeds 1,
+which is impossible for a probability.
+For small samples, we need exact computations or different methods (e.g., Hoeffding’s
+inequality).
+
+5.5
+
+Hoeffding’s Inequality
+
+For situations where n is not large enough for the CLT to be reliable:
+Key Theorem
+Hoeffding’s Inequality (i.i.d. case)
+Let n be a positive integer and X, X1 , . . . , Xn be i.i.d. random variables such that
+X ∈ [a, b] almost surely, where a < b are given numbers.
+Let µ = E[X]. Then, for all λ > 0:
+− 2nλ
+
+2
+
+P[|X̄n − µ| ≥ λ] ≤ 2e (b−a)2
+5.5.1
+
+Confidence Interval from Hoeffding
+
+For α ∈ (0, 1), setting the right-hand side equal to α and solving:
+r
+2
+log(2/α)
+− 2nλ 2
+2e (b−a) = α =⇒ λ = (b − a)
+2n
+For Bernoulli variables with a = 0 and b = 1:
+
+18
+
+Statistics for Applications
+
+Course Notes
+
+Non-Asymptotic Confidence Interval
+With probability ≥ 1 − α:
+r
+R̄n −
+
+log(2/α)
+≤ p ≤ R̄n +
+2n
+
+r
+
+log(2/α)
+2n
+
+This holds even for small sample sizes n.
+Advantages:
+• Valid for any sample size n (non-asymptotic)
+• Provides probabilistic guarantees without assumptions about normality
+Disadvantages:
+• Generally more conservative (wider intervals) than CLT-based intervals for large n
+
+6
+
+Types of Convergence
+
+Understanding different modes of convergence is crucial for statistical theory. Different
+types of convergence provide different guarantees about how random sequences behave.
+
+6.1
+
+Almost Sure Convergence
+
+Definition 6.1 (Almost Sure Convergence). Let (Tn )n≥1 be a sequence of random variables and T a random variable (which may be deterministic).
+a.s.
+We say Tn converges almost surely to T , denoted Tn −−→ T , if:
+P[{ω : Tn (ω) → T (ω)}] = 1
+Interpretation: With probability 1, the sequence Tn (ω) converges to T (ω) as a
+sequence of real numbers for almost every outcome ω in the sample space.
+
+6.2
+
+Convergence in Probability
+
+Definition 6.2 (Convergence in Probability). We say Tn converges in probability to T ,
+P
+denoted Tn −
+→ T , if:
+P[|Tn − T | ≥ λ] → 0 as n → ∞, ∀λ > 0
+Interpretation: For any tolerance λ > 0, the probability that Tn deviates from T
+by more than λ goes to zero as n increases.
+
+6.3
+
+Convergence in Lp
+
+Definition 6.3 (Convergence in Lp ). For p ≥ 1, we say Tn converges in Lp to T , denoted
+Lp
+Tn −→ T , if:
+E[|Tn − T |p ] → 0 as n → ∞
+19
+
+Statistics for Applications
+
+Course Notes
+
+Special cases:
+• p = 1: Convergence in mean
+• p = 2: Convergence in mean square (most common in statistics)
+Interpretation: The p-th moment of the distance between Tn and T goes to zero.
+
+6.4
+
+Convergence in Distribution
+
+Definition 6.4 (Convergence in Distribution). We say Tn converges in distribution to
+(d)
+
+T , denoted Tn −→ T , if:
+P[Tn ≤ x] → P[T ≤ x] as n → ∞
+for all x ∈ R at which the CDF of T is continuous.
+Also known as: Weak convergence or convergence in law.
+
+6.5
+
+Characterizations of Convergence in Distribution
+
+Proposition 6.5. The following statements are equivalent:
+(d)
+
+(i) Tn −→ T
+(ii) E[f (Tn )] → E[f (T )] for all continuous and bounded functions f
+(iii) E[eixTn ] → E[eixT ] for all x ∈ R (characteristic functions converge)
+Note: Condition (iii) is particularly useful because characteristic functions uniquely
+determine distributions.
+
+6.6
+
+Extensions to Random Vectors
+
+Remark 6.6. All these definitions extend naturally to random vectors, i.e., random
+variables taking values in Rd for some d ≥ 2.
+
+6.7
+
+Hierarchy of Convergence
+
+Proposition 6.7 (Relationships Between Modes of Convergence). The following implications hold:
+a.s.
+
+1. If Tn −−→ T , then Tn −
+→ T , and the two limits are equal almost surely
+P
+
+Lp
+
+2. If Tn −→ T , then:
+Lq
+
+• Tn −→ T for all q ≤ p
+• Tn −
+→T
+P
+
+• The limits are equal almost surely
+(d)
+
+3. If Tn −
+→ T , then Tn −→ T
+P
+
+20
+
+Statistics for Applications
+
+Course Notes
+
+Diagram of implications:
+a.s. ⇒ in probability ⇒ in distribution
+Lp ⇒ Lq (for q ≤ p) ⇒ in probability
+Important: The reverse implications generally do not hold!
+
+6.8
+
+Continuous Mapping Theorem
+
+Theorem 6.8 (Continuous Mapping Theorem). If f : R → R is a continuous function
+and:
+a.s./P/(d)
+Tn −−−−−→ T
+then:
+
+a.s./P/(d)
+
+f (Tn ) −−−−−→ f (T )
+Interpretation: Continuous transformations preserve convergence in all these modes.
+
+6.9
+
+Operations with Limits
+
+6.9.1
+
+Almost Sure and Probability Convergence
+a.s./P
+
+a.s./P
+
+Proposition 6.9. If Un −−−→ U and Vn −−−→ V , then:
+a.s./P
+
+1. Un + Vn −−−→ U + V
+a.s./P
+
+2. Un Vn −−−→ U V
+a.s./P
+
+3. If V ̸= 0 almost surely, then UVnn −−−→ VU
+6.9.2
+
+Warning About Convergence in Distribution
+
+Important Note
+Important Warning:
+In general, these algebraic rules do NOT apply to convergence in distribution unless
+the pair (Un , Vn ) converges jointly in distribution to (U, V ).
+(d)
+
+(d)
+
+For example, if Un −→ U and Vn −→ V independently, we cannot conclude that
+(d)
+
+Un + Vn −→ U + V without joint convergence.
+Exception: If one of the sequences converges to a constant (see Slutsky’s Theorem
+in Section 9).
+
+7
+
+Another Example: Metro Arrival Times
+
+7.1
+
+Problem Setup
+
+Scenario:
+21
+
+Statistics for Applications
+
+Course Notes
+
+• You observe the times between arrivals of the T (metro) at Kendall station: T1 , . . . , Tn
+• You want to model these inter-arrival times
+• Your goal is to estimate the rate parameter
+
+7.2
+
+Modeling Assumptions
+
+We assume:
+1. T1 , . . . , Tn are mutually independent
+2. Each Ti ∼ Exp(λ) (exponential distribution with parameter λ > 0)
+3. All share the same parameter λ
+
+7.3
+
+Discussion of Assumptions
+
+7.3.1
+
+Mutual Independence
+
+Assumption: The inter-arrival times T1 , . . . , Tn are mutually independent.
+Justification: Plausible but not completely verifiable. This is often the case with
+independence assumptions in practice.
+Reality check: Some dependence might exist (e.g., if one train is delayed, the next
+might also be affected), but the independence assumption is a reasonable first approximation.
+7.3.2
+
+Exponential Distribution
+
+Key property: The exponential distribution is memoryless:
+P[T1 > t + s | T1 > t] = P[T1 > s],
+
+∀s, t ≥ 0
+
+Interpretation: The remaining waiting time doesn’t depend on how long you’ve
+already waited.
+Additional properties:
+• Ti > 0 almost surely (waiting times are positive)
+• Density function: f (t) = λe−λt for t ≥ 0
+• Mean: E[T1 ] = λ1
+• Variance: Var[T1 ] = λ12
+7.3.3
+
+Common Parameter
+
+Assumption: All inter-arrival times have the same parameter λ.
+Justification: Assumes constant average inter-arrival time.
+Limitation: Valid only for limited time periods. Rush hour ̸= 11pm service!
+For more realistic modeling, one might consider:
+• Time-varying rates: λ(t)
+• Non-homogeneous Poisson processes
+22
+
+Statistics for Applications
+
+7.4
+
+Course Notes
+
+Estimation Strategy
+
+Since E[T1 ] = λ1 , a natural estimate of λ1 is the sample mean:
+n
+
+1X
+T̄n :=
+Ti
+n i=1
+A natural estimator of λ is therefore:
+λ̂ :=
+
+1
+T̄n
+
+This is called the method of moments estimator (we match sample moments to
+population moments).
+
+7.5
+
+Asymptotic Properties
+
+7.5.1
+
+Consistency
+
+By the Laws of Large Numbers:
+
+1
+λ
+By the continuous mapping theorem (with g(x) = 1/x):
+a.s./P
+
+T̄n −−−→
+
+λ̂ =
+
+1 a.s./P
+−−−→ λ
+T̄n
+
+Hence, λ̂ is a consistent estimator of λ.
+7.5.2
+
+Asymptotic Normality of Sample Mean
+
+By the Central Limit Theorem:
+√
+
+
+
+
+1 (d)
+n T̄n −
+−→ N 0, λ−2
+λ
+
+Challenge: How does this transfer to λ̂? How do we construct confidence intervals
+for λ?
+This requires the Delta Method.
+
+8
+
+The Delta Method
+
+The Delta Method is a powerful tool for deriving the asymptotic distribution of transformed estimators.
+
+23
+
+Statistics for Applications
+
+8.1
+
+Course Notes
+
+Statement of the Delta Method
+
+Key Theorem
+Delta Method
+Let (Zn )n≥1 be a sequence of random variables satisfying:
+√
+
+(d)
+
+n(Zn − θ) −→ N (0, σ 2 )
+
+for some θ ∈ R and σ 2 > 0.
+We say (Zn )n≥1 is asymptotically normal around θ.
+Let g : R → R be continuously differentiable at the point θ.
+Then:
+1. (g(Zn ))n≥1 is also asymptotically normal
+2. More precisely:
+√
+
+8.2
+
+(d)
+
+n(g(Zn ) − g(θ)) −→ N (0, [g ′ (θ)]2 σ 2 )
+
+Intuition
+
+The Delta Method is based on a first-order Taylor expansion:
+g(Zn ) ≈ g(θ) + g ′ (θ)(Zn − θ)
+Multiplying by
+
+√
+
+n:
+√
+
+Since
+
+√
+
+n(g(Zn ) − g(θ)) ≈ g ′ (θ) ·
+
+n(Zn − θ)
+
+(d)
+
+n(Zn − θ) −→ N (0, σ 2 ), and multiplying by the constant g ′ (θ):
+g ′ (θ) ·
+
+8.3
+
+√
+
+√
+(d)
+n(Zn − θ) −→ N (0, [g ′ (θ)]2 σ 2 )
+
+Application to Metro Example
+
+We have:
+
+√
+
+
+
+
+
+1 (d)
+1
+n T̄n −
+−→ N 0, 2
+λ
+λ
+
+Apply the Delta Method with:
+• Zn = T̄n
+• θ = λ1
+• σ 2 = λ12
+• g(x) = x1 , so g ′ (x) = − x12
+
+24
+
+Statistics for Applications
+
+Course Notes
+
+Therefore:
+
+ 
+1
+1
+=−
+g
+= −λ2
+λ
+(1/λ)2
+′
+
+By the Delta Method:
+ 
+ √ 
+√ 
+1
+(d)
+−→ N (0, λ4 · λ−2 ) = N (0, λ2 )
+n λ̂ − λ = n g(T̄n ) − g
+λ
+
+8.4
+
+Attempting a Confidence Interval
+
+From the asymptotic normality:
+√ λ̂ − λ (d)
+n
+−→ N (0, 1)
+λ
+For α ∈ (0, 1) and large n:
+
+
+
+qα/2 λ
+P |λ̂ − λ| ≤ √
+≈1−α
+n
+Important Note
+Problem: The interval
+
+
+
+qα/2 λ
+qα/2 λ
+λ̂ − √ , λ̂ + √
+n
+n
+
+
+
+depends on the unknown parameter λ!
+This cannot be used as a confidence interval because we don’t know λ (that’s what
+we’re trying to estimate).
+
+8.5
+
+Two Solutions
+
+8.5.1
+
+Solution 1: Algebraic Manipulation
+
+Starting from:
+
+qα/2 λ
+|λ̂ − λ| ≤ √
+n
+
+We can rearrange:
+qα/2 λ
+qα/2 λ
+− √ ≤ λ̂ − λ ≤ √
+n
+n
+qα/2 λ
+qα/2 λ
+λ̂ − √ ≤ λ ≤ λ̂ + √
+n
+n
+
+
+
+
+qα/2
+qα/2
+λ 1− √
+≤ λ̂ ≤ λ 1 + √
+n
+n
+Solving for λ:
+
+
+qα/2
+λ̂ 1 + √
+n
+
+−1
+
+
+
+qα/2
+≤ λ ≤ λ̂ 1 − √
+n
+
+25
+
+−1
+
+Statistics for Applications
+
+Course Notes
+
+Confidence Interval (Method 1)
+An asymptotic (1 − α) confidence interval for λ is:
+" 
+
+ #
+
+qα/2 −1
+qα/2 −1
+λ̂ 1 + √
+, λ̂ 1 − √
+n
+n
+
+8.5.2
+
+Solution 2: Slutsky’s Theorem
+
+A more systematic approach uses Slutsky’s Theorem (see next section).
+
+9
+
+Slutsky’s Theorem
+
+Slutsky’s Theorem provides a systematic way to handle unknown parameters in asymptotic distributions.
+
+9.1
+
+Statement
+
+Key Theorem
+Slutsky’s Theorem
+Let (Xn ) and (Yn ) be two sequences of random variables such that:
+(d)
+
+(i) Xn −→ X
+→c
+(ii) Yn −
+P
+
+where X is a random variable and c is a constant.
+Then:
+(d)
+(Xn , Yn ) −→ (X, c)
+In particular:
+(d)
+
+• Xn + Yn −→ X + c
+(d)
+
+• Xn Yn −→ cX
+(d)
+
+• If c ̸= 0, then XYnn −→ Xc
+Key Insight: You can replace a sequence converging in probability to a constant
+with that constant in expressions involving convergence in distribution.
+
+9.2
+
+Application to Metro Example
+
+Step 1: From the Delta Method, we know:
+√ λ̂ − λ (d)
+n
+−→ N (0, 1)
+λ
+26
+
+Statistics for Applications
+
+Course Notes
+
+Step 2: By the weak Law of Large Numbers and continuous mapping:
+P
+
+λ̂ −
+→λ
+Step 3: Apply Slutsky’s Theorem:
+√
+(d)
+• Let Xn = n λ̂−λ
+−→ N (0, 1)
+λ
+→1
+• Let Yn = λ̂λ −
+P
+
+Then:
+Xn · Y n =
+
+9.3
+
+√ λ̂ − λ λ √ λ̂ − λ (d)
+−→ N (0, 1)
+n
+· = n
+λ
+λ̂
+λ̂
+
+Confidence Interval Using Slutsky
+
+From the result above, for large n:
+"
+#
+√ λ̂ − λ
+P
+n
+≤ qα/2 ≈ 1 − α
+λ̂
+This gives:
+
+"
+
+#
+qα/2 λ̂
+P |λ̂ − λ| ≤ √
+≈1−α
+n
+
+Confidence Interval (Method 2)
+Another asymptotic (1 − α) confidence interval for λ is:
+#
+"
+qα/2 λ̂
+qα/2 λ̂
+λ̂ − √ , λ̂ + √
+n
+n
+Equivalently:
+
+
+
+qα/2
+qα/2
+λ̂ 1 − √ , 1 + √
+n
+n
+
+
+
+Advantage: This interval only depends on the observed estimate λ̂, not on the
+unknown λ.
+
+9.4
+
+Revisiting the Kissing Study
+
+Recall: In the kissing study, we used the trick that p(1 − p) ≤ 1/4 to construct a
+confidence interval.
+Alternative using Slutsky:
+We know:
+√ R̄n − p (d)
+np
+−→ N (0, 1)
+p(1 − p)
+Since R̄n −
+→ p, by continuous mapping:
+q
+p
+P
+R̄n (1 − R̄n ) −
+→ p(1 − p)
+P
+
+27
+
+Statistics for Applications
+
+Course Notes
+
+By Slutsky’s Theorem:
+√
+R̄n − p
+(d)
+np
+−→ N (0, 1)
+R̄n (1 − R̄n )
+Alternative Confidence Interval for p
+An asymptotic (1 − α) confidence interval for p is:
+"
+#
+r
+r
+R̄n (1 − R̄n )
+R̄n (1 − R̄n )
+, R̄n + qα/2
+R̄n − qα/2
+n
+n
+Comparison:
+• The interval using p(1 − p) ≤ 1/4 is more conservative (wider)
+• The interval using Slutsky is typically narrower and more efficient
+• Both are asymptotically valid
+
+10
+
+Summary and Key Takeaways
+
+10.1
+
+Statistical Thinking Framework
+
+The general approach to statistical problems:
+1. Start with a real-world problem
+2. Formulate a mathematical/statistical model with reasonable assumptions
+3. Apply appropriate statistical methods (estimation, testing, etc.)
+4. Interpret results in the context of the original problem
+5. Acknowledge limitations and assumptions
+
+10.2
+
+Fundamental Distinction: Probability vs. Statistics
+Probability
+Known mechanism
+Predict outcomes
+Deductive reasoning
+P[data | model]
+
+10.3
+
+Statistics
+Unknown mechanism
+Infer mechanism
+Inductive reasoning
+P[model | data]
+
+Essential Mathematical Tools
+
+1. Law of Large Numbers:
+• Guarantees consistency of sample averages
+• X̄n → µ as n → ∞
+28
+
+Statistics for Applications
+
+Course Notes
+
+2. Central Limit Theorem:
+• Quantifies rate of convergence
+• Provides asymptotic normality
+• Foundation for confidence intervals
+3. Hoeffding’s Inequality:
+• Non-asymptotic concentration bounds
+• Valid for finite samples
+• More conservative than CLT-based methods
+4. Delta Method:
+• Transforms asymptotic distributions
+• Based on first-order Taylor expansion
+• Essential for nonlinear estimators
+5. Slutsky’s Theorem:
+• Handles unknown parameters systematically
+• Allows replacement of consistent estimators
+• Key tool for constructing confidence intervals
+
+10.4
+
+Convergence Concepts
+
+Understanding the hierarchy:
+Almost sure ⇒ In probability ⇒ In distribution
+Key points:
+• Different modes provide different guarantees
+• Continuous transformations preserve convergence
+• Algebraic operations work for a.s. and probability convergence
+• Special care needed for convergence in distribution (use Slutsky!)
+
+10.5
+
+Confidence Intervals
+
+General strategy for constructing asymptotic confidence intervals:
+1. Establish consistency: θ̂n −
+→θ
+P
+
+2. Derive asymptotic normality:
+
+√
+
+(d)
+
+n(θ̂n − θ) −→ N (0, σ 2 )
+
+3. Handle unknown parameters using:
+• Conservative bounds (e.g., p(1 − p) ≤ 1/4)
+• Algebraic manipulation
+• Slutsky’s Theorem (most systematic)
+q
+
+σ̂
+
+√
+4. Construct interval of the form: θ̂n ± α/2
+n
+
+29
+
+Statistics for Applications
+
+10.6
+
+Course Notes
+
+Practical Considerations
+
+Model assumptions matter:
+• Independence assumptions are often unverifiable but necessary
+• Distributional assumptions (e.g., exponential, Bernoulli) should be justified
+• Homogeneity assumptions (same parameter) are simplifications
+Sample size considerations:
+• CLT is asymptotic: requires “large enough” n
+• Rule of thumb: n ≥ 30 for CLT to be reasonable
+• For small samples, use exact methods or concentration inequalities
+Interpretation of confidence intervals:
+• Frequentist interpretation: The procedure has coverage probability 1 − α
+• NOT: “The probability that θ is in this interval is 1 − α”
+• The parameter θ is fixed; the interval is random
+
+10.7
+
+Next Steps
+
+These foundational concepts prepare you for:
+• Hypothesis testing
+• Linear regression and generalized linear models
+• Maximum likelihood estimation
+• Bayesian inference
+• Non-parametric methods
+• High-dimensional statistics
+Always remember: Statistical methods provide powerful tools, but their validity
+depends critically on:
+1. Appropriateness of model assumptions
+2. Adequate sample size
+3. Proper interpretation of results
+4. Understanding of limitations
+
+30
+
+Statistics for Applications
+
+Course Notes
+
+Additional Resources
+Recommended Textbooks
+• Mathematical Statistics:
+– Wasserman, L. (2004). All of Statistics. Springer.
+– van der Vaart, A. W. (1998). Asymptotic Statistics. Cambridge University
+Press.
+• Probability Theory:
+– Billingsley, P. (1995). Probability and Measure. Wiley.
+– Durrett, R. (2019). Probability: Theory and Examples. Cambridge University
+Press.
+• Applied Statistics:
+– Casella, G., & Berger, R. L. (2002). Statistical Inference. Duxbury.
+– Wackerly, D., Mendenhall, W., & Scheaffer, R. L. (2014). Mathematical Statistics with Applications. Cengage.
+
+Online Resources
+• MIT OpenCourseWare: 18.650 Statistics for Applications
+• Stanford Online: Statistical Learning
+• Coursera: Mathematical Statistics specializations
+
+31
+
+

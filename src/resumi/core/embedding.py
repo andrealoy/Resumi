@@ -180,7 +180,10 @@ class FaissKnowledgeBase:
     # -- indexing ------------------------------------------------------------
 
     def rebuild(self) -> int:
-        paths = sorted(self._docs.glob("from_*/**/*.md"))
+        paths = sorted(
+    list(self._docs.rglob("*.md")) +
+    list(self._docs.rglob("*.txt"))
+)
         meta: list[ChunkMeta] = []
         index = faiss.IndexFlatIP(self._dim)
 

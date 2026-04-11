@@ -1,0 +1,127 @@
+FICHE DE RÉVISION – ÉCONOMÉTRIE APPLIQUÉE
+Analyse économétrique des déterminants du marché immobilier
+
+1. Objectif du projet
+Quel est l’objectif principal de votre étude : explicatif ou prédictif ?
+L’objectif principal du projet est explicatif. Il s’agit d’identifier et de quantifier les déterminants du prix
+immobilier afin de comprendre quels facteurs influencent les prix et dans quel sens. Les méthodes
+prédictives sont mobilisées dans un second temps comme outil de validation empirique, en
+comparant les performances hors échantillon afin de vérifier que les relations estimées ne sont pas
+uniquement adaptées aux données observées.
+
+2. Choix du modèle linéaire
+Pourquoi avoir choisi un modèle linéaire pour analyser le marché immobilier ?
+Le modèle linéaire permet une interprétation économique claire des coefficients, en termes d’effets
+marginaux ou d’élasticités. Même si le marché immobilier est complexe, les non-linéarités peuvent
+être intégrées via des transformations logarithmiques, ce qui permet de conserver un modèle
+interprétable tout en améliorant l’ajustement.
+
+3. Qualité d’ajustement et causalité
+Un R² élevé implique-t-il une relation causale forte ?
+Un R² élevé indique seulement que le modèle explique une grande part de la variance du prix. Il ne
+permet pas d’établir une relation causale, car la corrélation observée peut être due à des variables
+omises, à des mécanismes de sélection résidentielle ou à des problèmes d’endogénéité.
+
+4. Rôle de la surface
+Pourquoi la surface est-elle un déterminant central du prix immobilier ?
+La surface habitable mesure directement la capacité d’usage du logement. Empiriquement, elle
+explique une part importante de la variance du prix et son coefficient reste stable et significatif dans
+toutes les spécifications, ce qui confirme son rôle structurel.
+
+5. Spécification log-log mixte
+Pourquoi avoir retenu une spécification log-log mixte ?
+La spécification log-log mixte améliore la performance prédictive et facilite l’interprétation
+économique. Les coefficients associés aux variables en logarithme peuvent être interprétés comme
+des élasticités, tandis que les variables discrètes sont conservées en niveau.
+
+6. Interprétation des coefficients
+Comment interprétez-vous le coefficient de la distance au centre ?
+L’interprétation dépend de la spécification. En niveau, une augmentation d’un kilomètre modifie le
+prix en euros. En semi-log, une augmentation d’un kilomètre entraîne une variation du prix en
+pourcentage. En log-log, le coefficient s’interprète comme une élasticité : une hausse de 1 % de la
+distance entraîne une baisse de β % du prix.
+
+7. Critique du R² mécanique
+Comment répondez-vous à l’argument d’un R² mécaniquement élevé ?
+Bien que la surface explique une part importante de la variance, les coefficients restent stables et
+significatifs dans différentes spécifications. Les diagnostics économétriques et la performance hors
+échantillon confirment la robustesse du modèle.
+
+8. Effet marginal et élasticité
+Quelle est la différence entre effet marginal et élasticité ?
+L’effet marginal mesure une variation absolue du prix pour une variation unitaire d’une variable
+explicative. L’élasticité mesure une variation relative, exprimée en pourcentage, ce qui permet des
+comparaisons indépendantes de la taille des biens.
+
+9. Erreurs robustes
+Pourquoi utiliser des erreurs robustes ?
+Même si l’homoscedasticité n’est pas rejetée, les erreurs robustes sécurisent l’inférence face à de
+légères déviations des hypothèses, sans modifier les coefficients.
+
+10. Autocorrélation
+Comment interprétez-vous le test de Durbin–Watson ?
+Le test suggère une légère autocorrélation, mais son interprétation doit rester prudente car les
+données ne constituent pas une série temporelle stricte. Cette dépendance peut refléter des facteurs
+macroéconomiques communs.
+
+11. Multicolinéarité
+Pourquoi la multicolinéarité n’est-elle pas problématique ici ?
+Les VIF sont faibles, indiquant une absence de multicolinéarité préoccupante. La matrice des
+régresseurs reste de rang plein, garantissant l’identification des coefficients.
+
+12. Rupture structurelle
+Pourquoi tester une rupture en 2020 ?
+La crise sanitaire constitue un choc majeur susceptible de modifier durablement le fonctionnement du
+marché immobilier. Le test de Chow met en évidence une rupture structurelle significative.
+
+13. Nature de la rupture
+S’agit-il d’une rupture sur l’intercept ou sur les pentes ?
+La rupture concerne principalement les pentes, indiquant une modification de la valorisation relative
+des caractéristiques.
+
+14. Modèles séparés
+Pourquoi estimer deux modèles distincts ?
+Les modèles séparés permettent de capturer des régimes structurellement différents. Une variable
+muette ne modéliserait qu’un décalage de niveau.
+
+15. Endogénéité
+
+Qu’est-ce que l’endogénéité et pourquoi est-ce un problème ?
+Une variable est endogène lorsqu’elle est corrélée au terme d’erreur, ce qui entraîne un biais des
+estimateurs MCO et invalide l’interprétation causale.
+
+16. Qualité des écoles
+Pourquoi la qualité des écoles est-elle potentiellement endogène ?
+Elle peut refléter des caractéristiques non observées du quartier, comme le prestige ou la
+composition sociale, qui influencent directement le prix.
+
+17. Variables instrumentales
+Comment justifiez-vous le choix de l’instrument ?
+L’instrument est pertinent car il explique significativement la qualité des écoles. Son hypothèse
+d’exclusion reste toutefois discutable.
+
+18. Statistique F
+Que mesure la statistique F de première étape ?
+Elle mesure la force de l’instrument. Une valeur supérieure à 10 permet d’écarter le problème
+d’instrument faible.
+
+19. MCO versus IV
+Comment interprétez-vous la différence entre les estimations MCO et IV ?
+Le MCO est probablement biaisé à la hausse. L’IV isole une variation exogène plus faible, conduisant
+à un coefficient plus proche de zéro.
+
+20. Ridge et Lasso
+Pourquoi Ridge est-il plus performant que Lasso ?
+Ridge réduit la variance des estimateurs via une pénalisation douce. Lasso, orienté vers la sélection
+de variables, n’apporte pas de gain ici.
+
+21. Limites du projet
+Quelles sont les principales limites du projet ?
+La taille de l’échantillon et la validité discutable de l’instrument limitent l’interprétation causale.
+
+22. Extensions possibles
+Quelles améliorations proposeriez-vous ?
+L’utilisation de données de panel ou spatiales permettrait de mieux contrôler l’hétérogénéité non
+observée.
+
+
