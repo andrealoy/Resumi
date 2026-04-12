@@ -6,6 +6,7 @@ from typing import cast
 import gradio as gr
 
 from resumi.core.agent import Agent
+from resumi.core.audio_handler import start_recording, stop_recording, transcribe_file
 from resumi.core.document_loader import DocumentLoader
 from resumi.core.document_store import DocumentStore
 from resumi.core.gmail_handler import GmailHandler
@@ -27,52 +28,6 @@ def _sync_age_label(gmail_handler: GmailHandler) -> str:
         return f"Dernière synchronisation : il y a {int(age)} h."
     days = int(age // 24)
     return f"Dernière synchronisation : il y a {days} jour{'s' if days > 1 else ''}."
-
-
-def _initial_messages(gmail_handler: GmailHandler) -> list[dict[str, str]]:
-    """Build startup assistant messages depending on Gmail state."""
-    msgs: list[dict[str, str]] = []
-
-    if not gmail_handler.is_connected():
-        msgs.append(
-            {
-                "role": "assistant",
-                "content": (
-                    "Bonjour ! Gmail n'est pas encore connecté.\n\n"
-                    "Clique sur **Connecter Gmail** ci-dessous pour "
-                    "autoriser l'accès à ta boîte mail."
-                ),
-            }
-        )
-        return msgs
-
-    age_label = _sync_age_label(gmail_handler)
-    age = gmail_handler.sync_age_hours()
-
-    if age is None or age >= _STALE_HOURS:
-        msgs.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Bonjour ! Gmail est connecté. {age_label}\n\n"
-                    "Les mails ne sont pas à jour "
-                    "— synchronisation automatique en cours…"
-                ),
-            }
-        )
-    else:
-        msgs.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Bonjour ! Gmail est connecté. {age_label}\n\n"
-                    "Tu peux poser des questions, demander un brouillon de réponse, "
-                    "ou relancer une synchronisation."
-                ),
-            }
-        )
-    return msgs
-
 
 def _run_sync_steps(
     gmail_handler: GmailHandler,
@@ -164,6 +119,7 @@ def _build_doc_table(store: DocumentStore) -> list[list[str]]:
         rows.append([title, category, date])
     return rows
 
+# --- INTERFACE UI
 
 def create_gradio_blocks(
     *,
@@ -173,168 +129,145 @@ def create_gradio_blocks(
     gmail_handler: GmailHandler,
     store: DocumentStore,
 ) -> gr.Blocks:
-    with gr.Blocks(title="Resumi") as demo:
+    with gr.Blocks(title="Resumi", css=".gradio-container { max-width: 90% !important; margin: auto !important; }") as demo:
+
+        gr.Markdown(
+                    "# Resumi\nSynchroniser vos mails, synthétiser un fichier audio ou classer des documents."
+                )
         with gr.Tabs():
             # ── Tab 1: Chat Assistant ──────────────────────────────────
             with gr.Tab("Chat"):
-                gr.Markdown(
-                    "# Resumi\nSynchronise Gmail, puis discute avec l'assistant.\n"
-                    "💡 *Demande un brouillon de réponse "
-                    "à un mail directement ici.*"
-                )
-
-                initial_msgs = _initial_messages(gmail_handler)
+                
                 connected = gmail_handler.is_connected()
 
+                # --- message de bienvenue
+                initial_msgs = [
+                    {"role": "assistant", "content": "Bonjour ! Que voulez-vous faire aujourd'hui ?"}
+                ]
+
+                # --- chatbox
                 chatbot = gr.Chatbot(
-                    label="Conversation",
                     type="messages",
                     allow_tags=False,
                     value=initial_msgs,
+                    label=""
                 )
 
+                # --- message input + audio buttons 
                 with gr.Row():
+                    message = gr.Textbox(
+                        placeholder="Pose une question ou demande un brouillon de réponse…",
+                        scale=6,
+                        lines=1,
+                        container=False,
+                    )
+                    btn_mic = gr.Button("▶", variant="secondary", scale=1, min_width=120)
+                    btn_send = gr.Button("⭡", variant="primary", scale=1, min_width=120)
+
+
+                # --- connexion to gmail
+                with gr.Row():
+                    gmail_status = gr.Textbox(
+                        value="Gmail : connecté" if connected else "Gmail : non connecté",
+                        container=False, interactive=False, scale=6, lines=1,
+                    )
                     gmail_connect_btn = gr.Button(
-                        "🔗 Connecter Gmail",
-                        visible=not connected,
-                        variant="primary",
-                    )
-                    gmail_sync_btn = gr.Button(
-                        "🔄 Synchroniser Gmail",
-                        visible=connected,
-                        variant="secondary",
+                        "Se connecter" if not connected else "Synchroniser",
+                        variant="primary" if not connected else "secondary",
+                        scale=1, min_width=150,
                     )
 
-                gmail_status = gr.Textbox(
-                    label="Statut Gmail",
-                    visible=False,
-                    interactive=False,
-                )
+                sources = gr.JSON(label="Sources RAG")
+                is_rec  = gr.State(False)
 
-                def handle_gmail_connect(
+                # --- functions connexion to gmail
+
+                def handle_gmail_btn(
                     history: list[dict[str, str]],
-                ) -> Generator[
-                    tuple[list[dict[str, str]], dict, dict, dict],
-                    None,
-                    None,
-                ]:
-                    ok = gmail_handler.connect()
-                    if not ok:
-                        updated = history + [
-                            {
-                                "role": "assistant",
-                                "content": (
-                                    "La connexion Gmail a échoué. "
-                                    "Vérifie que le fichier "
-                                    "client-secret est présent "
-                                    "dans credentials/ et réessaie."
-                                ),
-                            }
-                        ]
-                        yield (
-                            updated,
-                            gr.update(visible=True),
-                            gr.update(visible=False),
-                            gr.update(visible=False),
-                        )
-                        return
-
-                    connected_msg = history + [
-                        {
-                            "role": "assistant",
-                            "content": (
-                                "Gmail connecté avec succès ! "
-                                "Synchronisation automatique…"
-                            ),
-                        }
-                    ]
-                    yield (
-                        connected_msg,
-                        gr.update(visible=False),
-                        gr.update(visible=True),
-                        gr.update(visible=False),
-                    )
-
-                    # Auto-sync right after connecting
-                    for h in _run_sync_steps(gmail_handler, agent, connected_msg):
-                        yield (
-                            h,
-                            gr.update(visible=False),
-                            gr.update(visible=True),
-                            gr.update(visible=False),
-                        )
-
+                ) -> Generator[tuple[list[dict[str, str]], str], None, None]:
+                    """Single handler — connects if not connected, syncs otherwise."""
+                    if not gmail_handler.is_connected():
+                        ok = gmail_handler.connect()
+                        if not ok:
+                            yield history, "Gmail : erreur de connexion"
+                            return
+                        yield history, "Gmail : connecté — synchronisation en cours…"
+ 
+                    for status in _run_sync_steps(gmail_handler, agent):
+                        yield history, status
+ 
                 gmail_connect_btn.click(
-                    fn=handle_gmail_connect,
+                    fn=handle_gmail_btn,
                     inputs=[chatbot],
-                    outputs=[chatbot, gmail_connect_btn, gmail_sync_btn, gmail_status],
+                    outputs=[chatbot, gmail_status],
                 )
-
-                def handle_gmail_sync(
-                    history: list[dict[str, str]],
-                ) -> Generator[list[dict[str, str]], None, None]:
-                    yield from _run_sync_steps(gmail_handler, agent, history)
-
-                gmail_sync_btn.click(
-                    fn=handle_gmail_sync,
-                    inputs=[chatbot],
-                    outputs=[chatbot],
-                )
-
-                # Auto-sync on page load if mails are stale
+ 
+                # Auto-sync on load if stale
                 needs_auto_sync = connected and (
                     gmail_handler.sync_age_hours() is None
                     or (gmail_handler.sync_age_hours() or 0) >= _STALE_HOURS
                 )
-
+ 
                 def auto_sync_on_load(
                     history: list[dict[str, str]],
-                ) -> Generator[list[dict[str, str]], None, None]:
+                ) -> Generator[tuple[list[dict[str, str]], str], None, None]:
                     if not needs_auto_sync:
-                        yield history
+                        yield history, "Gmail : connecté"
                         return
-                    yield from _run_sync_steps(gmail_handler, agent, history)
+                    for history, status in handle_gmail_btn(history):
+                        yield history, status
+ 
+                demo.load(fn=auto_sync_on_load, inputs=[chatbot], outputs=[chatbot, gmail_status])
 
-                demo.load(
-                    fn=auto_sync_on_load,
-                    inputs=[chatbot],
-                    outputs=[chatbot],
-                )
-
-                message = gr.Textbox(
-                    label="Message",
-                    placeholder="Pose une question ou demande un brouillon de réponse…",
-                )
-
-                sources = gr.JSON(label="Sources RAG")
-
+                # --- functions responses from agents
                 def respond(
                     text: str,
                     history: list[dict[str, str]],
-                ) -> tuple[
-                    list[dict[str, str]],
-                    str,
-                    list[dict[str, object]],
-                ]:
+                ) -> tuple[list[dict[str, str]], str, list[dict[str, object]]]:
                     result = ask(agent, text, history)
-
                     updated = history + [
                         {"role": "user", "content": text},
-                        {
-                            "role": "assistant",
-                            "content": str(result["answer"]),
-                        },
+                        {"role": "assistant", "content": str(result["answer"])},
                     ]
+                    return updated, "", result.get("sources", [])  # type: ignore[return-value]
+ 
+                # --- functions mic
 
-                    source_list = result.get("sources", [])
-
-                    return updated, "", source_list  # type: ignore[return-value]
-
-                message.submit(
-                    respond,
-                    inputs=[message, chatbot],
-                    outputs=[chatbot, message, sources],
+                def toggle_mic(recording: bool, history: list[dict[str, str]]):
+                    if not recording:
+                        # Start recording
+                        start_recording()
+                        return (
+                            True,
+                            gr.update(value="⏹", variant="stop"),
+                            history,
+                            "",
+                        )
+                    else:
+                        # Stop and transcribe
+                        _, transcript = stop_recording()
+                        new_history = history
+                        if transcript and not transcript.startswith("("):
+                            result = ask(agent, transcript, history)
+                            new_history = history + [
+                                {"role": "user",      "content": f"{transcript}"},
+                                {"role": "assistant", "content": str(result["answer"])},
+                            ]
+                        return (
+                            False,
+                            gr.update(value="▶", variant="secondary"),
+                            new_history,
+                            "",
+                        )
+ 
+                message.submit(respond, inputs=[message, chatbot], outputs=[chatbot, message, sources])
+                btn_mic.click(
+                    toggle_mic,
+                    inputs=[is_rec, chatbot],
+                    outputs=[is_rec, btn_mic, chatbot, message],
                 )
+                btn_send.click(respond, inputs=[message, chatbot], outputs=[chatbot, message, sources])
+
 
             # ── Tab 2: Upload Documents ────────────────────────────────
             with gr.Tab("Documents"):
