@@ -6,9 +6,14 @@ import gradio as gr
 
 from resumi.core.agent import Agent
 from resumi.ui.chat import ask
-
-
-def create_gradio_blocks(*, agent: Agent) -> gr.Blocks:
+from resumi.core.mail_loader import MailLoader
+from resumi.core.document_loader import DocumentLoader
+def create_gradio_blocks(
+    *,
+    agent: Agent,
+    mail_loader: MailLoader,
+    document_loader: DocumentLoader,
+) -> gr.Blocks:
     with gr.Blocks(title="Resumi") as demo:
         with gr.Tabs():
 
@@ -57,12 +62,51 @@ def create_gradio_blocks(*, agent: Agent) -> gr.Blocks:
                     inputs=[message, chatbot],
                     outputs=[chatbot, message, sources],
                 )
+            with gr.Tab("Upload Documents"):
 
+                folder_input = gr.Textbox(
+                label="Nom du dossier",
+                placeholder="ex: cours_ml",
+                )
+
+                file_input = gr.File(
+                file_count="multiple",
+                label="Ajouter des fichiers",
+                )
+
+                upload_btn = gr.Button("Uploader et indexer")
+
+                upload_status = gr.Textbox(label="Statut")
+
+                def handle_upload(files, folder_name):
+                    return document_loader.save_files(files, folder_name)
+
+                upload_btn.click(
+                fn=handle_upload,
+                inputs=[file_input, folder_input],
+                outputs=upload_status,
+                )
             with gr.Tab("Assistant Mail"):
+                email_selector = gr.Dropdown(
+                    choices=mail_loader.list_email_files(),
+                    label="Choisir un mail synchronisé",
+                )
+
                 email_input = gr.Textbox(
                     label="Contenu du mail",
                     lines=10,
                     placeholder="Colle ici le contenu du mail...",
+                )
+
+                def load_selected_email(path: str) -> str:
+                    if not path:
+                       return ""
+                    return mail_loader.read_email_file(path)
+
+                email_selector.change(
+                    fn=load_selected_email,
+                    inputs=email_selector,
+                    outputs=email_input,
                 )
 
                 classify_btn = gr.Button("Classifier le thème")
@@ -80,5 +124,20 @@ def create_gradio_blocks(*, agent: Agent) -> gr.Blocks:
                     inputs=email_input,
                     outputs=category_output,
                 )
+                
+                draft_btn = gr.Button("Générer un brouillon")
 
+                draft_output = gr.Textbox(
+                    label="Brouillon de réponse",
+                    lines=10,
+                )
+
+                async def generate_reply(email_text: str) -> str:
+                    return await agent.draft_email_reply(email_text=email_text)
+ 
+                draft_btn.click(
+                    fn=generate_reply,
+                    inputs=email_input,
+                    outputs=draft_output,
+                )
     return cast(gr.Blocks, demo)

@@ -16,7 +16,8 @@ from resumi.core.embedding import (
 )
 from resumi.core.gmail_handler import GmailHandler
 from resumi.ui.gradio_ui import create_gradio_blocks
-
+from resumi.core.mail_loader import MailLoader
+from resumi.core.document_loader import DocumentLoader
 # ---------------------------------------------------------------------------
 # Dependency wiring (cached singletons)
 # ---------------------------------------------------------------------------
@@ -74,8 +75,14 @@ def _gmail() -> GmailHandler:
         query=s.gmail_query,
         user_id=s.gmail_user_id,
     )
-
-
+@lru_cache
+def _mail_loader() -> MailLoader:
+    s = get_settings()
+    return MailLoader(docs_root=s.docs_root)
+@lru_cache
+def _document_loader() -> DocumentLoader:
+    s = get_settings()
+    return DocumentLoader(docs_root=s.docs_root, knowledge_base=_kb())
 # ---------------------------------------------------------------------------
 # Request / Response models
 # ---------------------------------------------------------------------------
@@ -115,7 +122,11 @@ def create_app() -> FastAPI:
 
     # -- Gradio UI -----------------------------------------------------------
 
-    blocks = create_gradio_blocks(agent=_agent())
+    blocks = create_gradio_blocks(
+    agent=_agent(),
+    mail_loader=_mail_loader(),
+    document_loader=_document_loader(),
+    )
     return cast(FastAPI, gr.mount_gradio_app(app, blocks, path=settings.gradio_path))
 
 
