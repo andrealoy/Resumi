@@ -24,7 +24,7 @@ jobs:
         run: |
           docker run -d --name resumi -p 8000:8000 resumi:ci
           for i in $(seq 1 30); do
-            curl -sf http://localhost:8000/health && exit 0
+            curl -sf http://localhost:8000/api/v1/health && exit 0
             sleep 2
           done
           docker logs resumi
