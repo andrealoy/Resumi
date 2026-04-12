@@ -67,38 +67,52 @@ def start_recording() -> str:
  
  
 def stop_recording() -> tuple[str, str]:
-    """Stop capture and transcribe buffered audio.
- 
-    Returns:
-        (status_message, transcript_text)
-    """
     global _is_recording
- 
+
     if not _is_recording:
         return "Pas d'enregistrement en cours.", ""
- 
+
     _stop_event.set()
     _is_recording = False
- 
-    # Collect all buffered chunks
+
+    # 1. On récupère tous les morceaux
     chunks: list[np.ndarray] = []
     while not _audio_queue.empty():
         chunks.append(_audio_queue.get())
- 
+
     if not chunks:
         return "Aucun audio capturé.", ""
- 
-    lines: list[str] = []
-    for chunk in chunks:
-        text = _transcribe_chunk(chunk)
-        if text:
-            ts = datetime.now().strftime("%H:%M:%S")
-            lines.append(f"[{ts}] {text}")
- 
-    if not lines:
-        return "Terminé.", "(silence détecté)"
- 
-    return "Transcription terminée.", "\n".join(lines)
+
+    # 2. Fusionne l'audio
+    full_audio = np.concatenate(chunks).flatten()
+
+    # 3. Sauvegarde dans un fichier temporaire
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp_path = tmp.name
+    
+    try:
+        # Normalisation et écriture
+        wav_write(tmp_path, SAMPLE_RATE, (full_audio * 32767).astype(np.int16))
+        
+        # 4. Une seule transcription
+        opts = {
+            "language": LANGUAGE,
+            "fp16": False,
+            "temperature": 0.0  # Plus stable pour la voix rapide
+        }
+        result = get_whisper().transcribe(tmp_path, **opts)
+        transcript = result["text"].strip()
+        
+        if not transcript:
+            return "Terminé.", "(silence détecté)"
+            
+        return "Transcription terminée.", transcript
+
+    except Exception as exc:
+        return f"Erreur : {exc}", ""
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
  
  
 def transcribe_file(path: str) -> tuple[str, str]:
