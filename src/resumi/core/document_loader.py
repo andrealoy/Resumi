@@ -3,13 +3,21 @@
 from pathlib import Path
 from typing import Any
 
+from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import FaissKnowledgeBase
 
 
 class DocumentLoader:
-    def __init__(self, *, docs_root: str, knowledge_base: FaissKnowledgeBase) -> None:
+    def __init__(
+        self,
+        *,
+        docs_root: str,
+        knowledge_base: FaissKnowledgeBase,
+        store: DocumentStore | None = None,
+    ) -> None:
         self._docs = Path(docs_root)
         self._kb = knowledge_base
+        self._store = store
 
     def save_files(self, files: list[Any], folder_name: str) -> str:
         if not folder_name.strip():
@@ -26,7 +34,21 @@ class DocumentLoader:
             if not src_path.exists():
                 continue
             target = dest / src_path.name
-            target.write_bytes(src_path.read_bytes())
+            content = src_path.read_bytes()
+            text = content.decode("utf-8", errors="ignore")
+            content_hash = DocumentStore.hash_content(text)
+            if self._store and self._store.exists(content_hash=content_hash):
+                continue
+            target.write_bytes(content)
+            rel = str(target.relative_to(self._docs))
+            if self._store:
+                self._store.add(
+                    doc_type="doc",
+                    source="upload",
+                    title=src_path.name,
+                    file_path=rel,
+                    content_hash=content_hash,
+                )
             saved += 1
 
         self._kb.rebuild()

@@ -13,4 +13,4 @@ build/
 .env.*
 !.env.example
 credentials/
-docs/from_*/
+docs/
