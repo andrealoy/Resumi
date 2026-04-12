@@ -6,6 +6,7 @@ from typing import Any, Protocol, TypedDict, cast
 
 import faiss  # type: ignore[import-untyped]
 import numpy as np
+import pymupdf
 from openai import OpenAI
 
 # ---------------------------------------------------------------------------
@@ -179,15 +180,33 @@ class FaissKnowledgeBase:
 
     # -- indexing ------------------------------------------------------------
 
+    _TEXT_EXTS = {".md", ".txt"}
+    _PDF_EXTS = {".pdf"}
+    _ALL_EXTS = _TEXT_EXTS | _PDF_EXTS
+
+    @staticmethod
+    def _read_file(p: Path) -> str:
+        """Extract text from a file (supports .md, .txt, .pdf)."""
+        if p.suffix.lower() in (".md", ".txt"):
+            return p.read_text(encoding="utf-8")
+        if p.suffix.lower() == ".pdf":
+            with pymupdf.open(str(p)) as doc:
+                return "\n".join(page.get_text() for page in doc)
+        return ""
+
     def rebuild(self) -> int:
-        paths = sorted(self._docs.glob("from_*/**/*.md"))
+        paths = sorted(
+            f for f in self._docs.rglob("*") if f.suffix.lower() in self._ALL_EXTS
+        )
         meta: list[ChunkMeta] = []
         index = faiss.IndexFlatIP(self._dim)
 
         if paths:
             texts: list[str] = []
             for p in paths:
-                doc = p.read_text(encoding="utf-8")
+                doc = self._read_file(p)
+                if not doc.strip():
+                    continue
                 chunks = self._chunk(doc) or [doc]
                 for ci, ct in enumerate(chunks):
                     texts.append(

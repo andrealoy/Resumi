@@ -1,6 +1,11 @@
 """Google Calendar integration – placeholder."""
 
 
-async def create_event(title: str, date: str, calendar_id: str = "primary") -> str:
-    """Create event on Google Calendar. TODO: implement."""
-    raise NotImplementedError("Google Calendar integration not yet implemented")
+class CalendarHandler:
+    """Manage Google Calendar events. TODO: implement with Google API."""
+
+    def __init__(self, *, calendar_id: str = "primary") -> None:
+        self._calendar_id = calendar_id
+
+    async def create_event(self, title: str, date: str) -> str:
+        raise NotImplementedError("Google Calendar integration not yet implemented")

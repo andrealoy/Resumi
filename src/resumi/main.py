@@ -5,16 +5,20 @@ from typing import cast
 
 import gradio as gr
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from resumi.config import get_settings
 from resumi.core.agent import Agent
+from resumi.core.document_loader import DocumentLoader
+from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import (
     FaissKnowledgeBase,
     LocalHashEmbedder,
     OpenAITextEmbedder,
 )
 from resumi.core.gmail_handler import GmailHandler
+from resumi.core.mail_loader import MailLoader
 from resumi.ui.gradio_ui import create_gradio_blocks
 
 # ---------------------------------------------------------------------------
@@ -60,7 +64,14 @@ def _agent() -> Agent:
         api_key=s.openai_api_key,
         base_url=s.openai_base_url,
         search_limit=s.rag_search_limit,
+        store=_store(),
     )
+
+
+@lru_cache
+def _store() -> DocumentStore:
+    s = get_settings()
+    return DocumentStore(db_path=s.db_path)
 
 
 @lru_cache
@@ -71,9 +82,22 @@ def _gmail() -> GmailHandler:
         token_file=s.gmail_token_file,
         docs_root=s.docs_root,
         knowledge_base=_kb(),
+        store=_store(),
         query=s.gmail_query,
         user_id=s.gmail_user_id,
     )
+
+
+@lru_cache
+def _mail_loader() -> MailLoader:
+    s = get_settings()
+    return MailLoader(docs_root=s.docs_root)
+
+
+@lru_cache
+def _document_loader() -> DocumentLoader:
+    s = get_settings()
+    return DocumentLoader(docs_root=s.docs_root, knowledge_base=_kb(), store=_store())
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +110,7 @@ class ChatRequest(BaseModel):
 
 
 class GmailSyncRequest(BaseModel):
-    max_results: int = Field(default=1000, ge=1, le=1000)
+    max_results: int = Field(default=200, ge=1, le=1000)
 
 
 # ---------------------------------------------------------------------------
@@ -97,6 +121,12 @@ class GmailSyncRequest(BaseModel):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
+
+    # -- redirect root to Gradio UI -----------------------------------------
+
+    @app.get("/")
+    async def root() -> RedirectResponse:
+        return RedirectResponse(url=settings.gradio_path)
 
     # -- routes --------------------------------------------------------------
 
@@ -115,7 +145,13 @@ def create_app() -> FastAPI:
 
     # -- Gradio UI -----------------------------------------------------------
 
-    blocks = create_gradio_blocks(agent=_agent())
+    blocks = create_gradio_blocks(
+        agent=_agent(),
+        mail_loader=_mail_loader(),
+        document_loader=_document_loader(),
+        gmail_handler=_gmail(),
+        store=_store(),
+    )
     return cast(FastAPI, gr.mount_gradio_app(app, blocks, path=settings.gradio_path))
 
 

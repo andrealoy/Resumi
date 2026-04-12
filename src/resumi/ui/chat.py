@@ -7,12 +7,16 @@ from typing import Any
 from resumi.core.agent import Agent
 
 
-def ask(agent: Agent, message: str) -> dict[str, object]:
+def ask(
+    agent: Agent,
+    message: str,
+    history: list[dict[str, str]] | None = None,
+) -> dict[str, object]:
     """Synchronous wrapper around agent.chat() for Gradio callbacks."""
-    return _run_async(agent.chat(message=message))
+    return run_async(agent.chat(message=message, history=history))
 
 
-def _run_async[T](coro: Coroutine[Any, Any, T]) -> T:
+def run_async[T](coro: Coroutine[Any, Any, T]) -> T:
     try:
         asyncio.get_running_loop()
     except RuntimeError:
