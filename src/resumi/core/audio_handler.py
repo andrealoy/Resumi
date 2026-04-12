@@ -10,12 +10,33 @@ from datetime import datetime
 import numpy as np
 from scipy.io.wavfile import write as wav_write
  
+from openai import OpenAI
+
+'''client = OpenAI() # Assure-toi que OPENAI_API_KEY est dans ton .env
+
+def transcribe_file_api(path: str) -> tuple[str, str]:
+    if not path:
+        return "Aucun fichier fourni.", ""
+    try:
+        # On ouvre le fichier pour l'envoyer
+        with open(path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file,
+                language="fr"
+            )
+        return "Transcription terminée.", transcript.text
+    except Exception as exc:
+        return f"Erreur API : {exc}", ""'''
+
+
+
 # ──────────────────────────────────────────
 # CONFIGURATION
 # ──────────────────────────────────────────
 SAMPLE_RATE    = 16000
-CHUNK_SECONDS  = 2
-SILENCE_THRESH = 0.005
+CHUNK_SECONDS  = 0.5
+SILENCE_THRESH = 0.01
 LANGUAGE       = "fr"      # None = auto-detect
 MODEL_SIZE     = "small"   # tiny | base | small | medium | large
 # ──────────────────────────────────────────

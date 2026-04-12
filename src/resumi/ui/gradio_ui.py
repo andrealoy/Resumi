@@ -189,6 +189,7 @@ def create_gradio_blocks(
                         container=False,
                     )
                     btn_mic = gr.Button("🎙️", variant="secondary", scale=1, min_width=120)
+                    btn_stop = gr.Button("🛑", variant="stop", scale=1, min_width=80)
 
                 # --- connexion to gmail
                 with gr.Row():
@@ -260,7 +261,31 @@ def create_gradio_blocks(
  
                 # --- functions mic
 
-                def toggle_mic(recording: bool, history: list[dict[str, str]]):
+                def stop_and_transcribe(history: list[dict[str, str]]):
+                    _, transcript = stop_recording()
+                    
+                    if transcript and not transcript.startswith("("):
+                        new_history = history + [
+                            {"role": "user", "content": transcript},
+                            {"role": "assistant", "content": "*En train de réfléchir...*"}
+                        ]
+                        return False, gr.update(value="🎙️", variant="secondary"), new_history, transcript
+                    
+                    return False, gr.update(value="🎙️", variant="secondary"), history, ""
+
+                def agent_voice_respond(transcript: str, history: list[dict[str, str]]):
+                    if not transcript or transcript.startswith("("):
+                        return history, ""
+
+                    result = ask(agent, transcript, history[:-2]) # On enlève les 2 derniers (user + loading) pour l'appel
+                    
+                    new_history = history[:-1] + [
+                        {"role": "assistant", "content": str(result["answer"])}
+                    ]
+                    return new_history, result.get("sources", [])
+
+
+                '''def toggle_mic(recording: bool, history: list[dict[str, str]]):
                     if not recording:
                         # Start recording
                         start_recording()
@@ -285,15 +310,38 @@ def create_gradio_blocks(
                             gr.update(value="▶", variant="secondary"),
                             new_history,
                             "",
-                        )
+                        )'''
  
-                message.submit(respond, inputs=[message, chatbot], outputs=[chatbot, message, sources])
-                btn_mic.click(
-                    toggle_mic,
+                # Un état caché pour stocker le texte transcrit entre les deux étapes
+                temp_transcript = gr.State("")
+
+                chat_event = message.submit(respond, inputs=[message, chatbot], outputs=[chatbot, message, sources])
+               
+                voice_event = btn_mic.click(
+                    fn=lambda r: (True, gr.update(value="⏹", variant="stop")) if not r else (False, gr.update(value="⏳", interactive=False)),
+                    inputs=[is_rec],
+                    outputs=[is_rec, btn_mic],
+                    show_progress=False
+                ).then(
+                    fn=lambda r, h: start_recording() if r else None,
                     inputs=[is_rec, chatbot],
-                    outputs=[is_rec, btn_mic, chatbot, message],
+                ).then(
+                    fn=lambda r, h: stop_and_transcribe(h) if not r else (True, gr.update(), h, ""),
+                    inputs=[is_rec, chatbot],
+                    outputs=[is_rec, btn_mic, chatbot, temp_transcript],
+                    queue=True
+                ).then(
+                    fn=agent_voice_respond,
+                    inputs=[temp_transcript, chatbot],
+                    outputs=[chatbot, sources],
+                    queue=True
                 )
 
+                btn_stop.click(
+                    fn=lambda: (False, gr.update(value="🎙️", variant="secondary", interactive=True), gr.update(visible=False)),
+                    outputs=[is_rec, btn_mic, btn_stop],
+                    cancels=[chat_event, voice_event]
+                )
 
             # ── Tab 2: Upload Documents ────────────────────────────────
             with gr.Tab("Documents"):
