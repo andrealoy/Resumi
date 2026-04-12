@@ -23,5 +23,9 @@ jobs:
       - name: Health check
         run: |
           docker run -d --name resumi -p 8000:8000 resumi:ci
-          sleep 5
-          curl -f http://localhost:8000/health
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && exit 0
+            sleep 2
+          done
+          docker logs resumi
+          exit 1
