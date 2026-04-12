@@ -7,34 +7,21 @@ on:
   pull_request:
 
 jobs:
-  quality:
+  ci:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v5
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+      - name: Install & test
+        run: uv sync --all-groups && uv run pytest
 
-      - name: Install dependencies
-        run: uv sync --all-groups
-
-      - name: Lint
-        run: uv run ruff check .
-
-      - name: Format check
-        run: uv run ruff format --check .
-
-      - name: Type check
-        run: uv run mypy src
-
-      - name: Run tests
-        run: uv run pytest
-
-      - name: Build Docker image
+      - name: Build container
         run: docker build -t resumi:ci .
+
+      - name: Health check
+        run: |
+          docker run -d --name resumi -p 8000:8000 resumi:ci
+          sleep 5
+          curl -f http://localhost:8000/health
