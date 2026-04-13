@@ -6,6 +6,7 @@ from typing import Any
 from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import FaissKnowledgeBase
 
+
 class DocumentLoader:
     def __init__(
         self,
@@ -36,7 +37,7 @@ class DocumentLoader:
             else:
                 continue
 
-            #src_path = Path(f.name)
+            # src_path = Path(f.name)
             if not src_path.exists():
                 continue
             target = dest / src_path.name
@@ -57,5 +58,6 @@ class DocumentLoader:
                 )
             saved += 1
 
-        self._kb.rebuild()
+        if saved:
+            self._kb.rebuild()
         return f"{saved} fichier(s) ajoutés et indexés dans '{folder_name.strip()}'."

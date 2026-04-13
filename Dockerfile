@@ -5,10 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System deps required by pymupdf / faiss-cpu
+# System deps required by pymupdf / faiss-cpu / sounddevice
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libmupdf-dev libfreetype6 libharfbuzz0b libjpeg62-turbo \
+        libportaudio2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
