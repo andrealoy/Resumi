@@ -6,7 +6,7 @@ from langchain_core.tools import tool
 import ast
 import pandas as pd
 import os
-from datetime import datetime
+import dateparser
 import operator as op
 from typing import Callable
 
@@ -87,11 +87,15 @@ CALENDAR_FILE = "local_calendar.csv"
 
 @tool
 def calendar_tool(event_details: str, date_time: str) -> str:
-    """Enregistre un événement dans le calendrier local."""
+    """Enregistre un événement dans le calendrier. 
+    'date_time' peut être un format ISO ou une date naturelle en français."""
     try:
-        dt = datetime.strptime(date_time, "%Y-%m-%d %H:%M")
+        # dateparser va tenter de comprendre des dates de formats moins précis comme "jeudi 13"
+        dt = dateparser.parse(date_time, languages=['fr'], settings={'PREFER_DATES_FROM': 'future'})
         
-        # Création d'une nouvelle ligne
+        if dt is None:
+            return "ERREUR : Je n'ai pas réussi à identifier la date à laquelle tu fais référence. Peux-tu être plus précis ? :)"
+
         new_event = {
             "Date": dt.strftime("%Y-%m-%d"),
             "Heure": dt.strftime("%H:%M"),
