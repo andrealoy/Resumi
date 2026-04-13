@@ -1,5 +1,7 @@
 """Resumi – FastAPI application with Gradio UI."""
 
+import logging
+import os
 from functools import lru_cache
 from typing import cast
 
@@ -20,6 +22,18 @@ from resumi.core.embedding import (
 from resumi.core.gmail_handler import GmailHandler
 from resumi.core.mail_loader import MailLoader
 from resumi.ui.gradio_ui import create_gradio_blocks
+
+# Configure logging early so every module's logger emits to stderr.
+logging.basicConfig(
+    level=getattr(logging, get_settings().log_level.upper(), logging.INFO),
+    format="%(asctime)s  %(levelname)-7s  %(name)s  %(message)s",
+    datefmt="%H:%M:%S",
+)
+
+# python-dotenv / uvicorn may export an empty OPENAI_BASE_URL from .env
+# which the OpenAI SDK picks up as a fallback, causing connection errors.
+if not os.environ.get("OPENAI_BASE_URL"):
+    os.environ.pop("OPENAI_BASE_URL", None)
 
 # ---------------------------------------------------------------------------
 # Dependency wiring (cached singletons)
@@ -65,6 +79,7 @@ def _agent() -> Agent:
         base_url=s.openai_base_url,
         search_limit=s.rag_search_limit,
         store=_store(),
+        gmail_handler=_gmail(),
     )
 
 

@@ -27,10 +27,17 @@ class DocumentLoader:
         dest.mkdir(parents=True, exist_ok=True)
 
         saved = 0
+
         for f in files or []:
-            if not hasattr(f, "name"):
+            if hasattr(f, "name"):
+                src_path = Path(f.name)
+            elif isinstance(f, (str, Path)):
+                src_path = Path(f)
+                print(src_path)
+            else:
                 continue
-            src_path = Path(f.name)
+
+            # src_path = Path(f.name)
             if not src_path.exists():
                 continue
             target = dest / src_path.name
@@ -51,5 +58,6 @@ class DocumentLoader:
                 )
             saved += 1
 
-        self._kb.rebuild()
+        if saved:
+            self._kb.rebuild()
         return f"{saved} fichier(s) ajoutés et indexés dans '{folder_name.strip()}'."

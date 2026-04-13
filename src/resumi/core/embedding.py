@@ -230,7 +230,12 @@ class FaissKnowledgeBase:
     # -- search --------------------------------------------------------------
 
     def search(
-        self, *, query: str, limit: int = 4, prefixes: list[str] | None = None
+        self,
+        *,
+        query: str,
+        limit: int = 4,
+        prefixes: list[str] | None = None,
+        exclude_prefixes: list[str] | None = None,
     ) -> list[DocumentMatch]:
         if not self._index_path.exists() or not self._meta_path.exists():
             self.rebuild()
@@ -258,6 +263,11 @@ class FaissKnowledgeBase:
                 item = meta[idx]
                 if prefixes and not any(
                     item["relative_path"].startswith(p) for p in prefixes
+                ):
+                    continue
+                if exclude_prefixes and any(
+                    item["relative_path"].startswith(p)
+                    for p in exclude_prefixes
                 ):
                     continue
                 lex = self._lexical_score(variant, item)
