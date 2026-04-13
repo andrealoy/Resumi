@@ -24,6 +24,10 @@ _ALLOWED_OPS: dict[type, Callable] = {
 
 @tool
 def _safe_eval(node: ast.AST) -> float:
+    """
+    Effectue un calcul mathématique sécurisé.
+    Exemple d'entrée : '2 + 2' ou '(10 * 5) / 2'.
+    """
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
         return float(node.value)
 
