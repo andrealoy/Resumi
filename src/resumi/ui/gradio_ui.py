@@ -6,11 +6,16 @@ from typing import cast
 import gradio as gr
 
 from resumi.core.agent import Agent
+from resumi.core.audio_handler import start_recording, stop_recording, transcribe_file
 from resumi.core.document_loader import DocumentLoader
 from resumi.core.document_store import DocumentStore
 from resumi.core.gmail_handler import GmailHandler
 from resumi.core.mail_loader import MailLoader
 from resumi.ui.chat import ask, run_async
+
+import os
+from datetime import datetime
+import tempfile
 
 # Threshold (hours) beyond which we consider the mail sync stale.
 _STALE_HOURS = 24.0
@@ -27,52 +32,6 @@ def _sync_age_label(gmail_handler: GmailHandler) -> str:
         return f"Dernière synchronisation : il y a {int(age)} h."
     days = int(age // 24)
     return f"Dernière synchronisation : il y a {days} jour{'s' if days > 1 else ''}."
-
-
-def _initial_messages(gmail_handler: GmailHandler) -> list[dict[str, str]]:
-    """Build startup assistant messages depending on Gmail state."""
-    msgs: list[dict[str, str]] = []
-
-    if not gmail_handler.is_connected():
-        msgs.append(
-            {
-                "role": "assistant",
-                "content": (
-                    "Bonjour ! Gmail n'est pas encore connecté.\n\n"
-                    "Clique sur **Connecter Gmail** ci-dessous pour "
-                    "autoriser l'accès à ta boîte mail."
-                ),
-            }
-        )
-        return msgs
-
-    age_label = _sync_age_label(gmail_handler)
-    age = gmail_handler.sync_age_hours()
-
-    if age is None or age >= _STALE_HOURS:
-        msgs.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Bonjour ! Gmail est connecté. {age_label}\n\n"
-                    "Les mails ne sont pas à jour "
-                    "— synchronisation automatique en cours…"
-                ),
-            }
-        )
-    else:
-        msgs.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Bonjour ! Gmail est connecté. {age_label}\n\n"
-                    "Tu peux poser des questions, demander un brouillon de réponse, "
-                    "ou relancer une synchronisation."
-                ),
-            }
-        )
-    return msgs
-
 
 def _run_sync_steps(
     gmail_handler: GmailHandler,
@@ -158,13 +117,48 @@ def _build_doc_table(store: DocumentStore) -> list[list[str]]:
     docs = store.search(doc_type="doc", limit=100)
     rows: list[list[str]] = []
     for d in docs:
-        title = str(d.get("title", ""))
-        category = str(d.get("category", "")) or "—"
-        date = str(d.get("date", ""))[:10]
-        rows.append([title, category, date])
+        if d.get("type") in ["doc", "audio"]:
+            title = str(d.get("title", ""))
+            category = str(d.get("category", "")) or "—"
+            date = str(d.get("date", ""))[:10]
+            rows.append([title, category, date])
     return rows
 
+# --- Thème de l'interface 
+theme = gr.themes.Soft(
+    # Le fond sera géré via neutral_hue
+    primary_hue="gray",  
+    secondary_hue="blue", 
+    neutral_hue="slate", 
+    spacing_size="md",
+    radius_size="lg",
+).set(
+    body_background_fill_dark="#1E293B",
+    block_background_fill_dark="#334155",
 
+    # --- BOUTONS ---
+    button_primary_background_fill="#A16454", 
+    button_primary_background_fill_hover="#A16454",
+    button_primary_text_color="#FFFFFF",
+    
+    # Largeur et espacement
+    layout_gap="12px",
+    container_radius="12px",
+)
+
+custom_css = """
+.dashed-upload {
+    border: 2px dashed #546e7a !important; /* Couleur gris-bleu */
+    border-radius: 10px !important;
+    background: transparent !important;
+}
+/* Pour cibler spécifiquement la zone de drag & drop interne de Gradio */
+.dashed-upload .file-preview {
+    border: none !important;
+}
+"""
+
+# --- INTERFACE UI
 def create_gradio_blocks(
     *,
     agent: Agent,
@@ -173,265 +167,315 @@ def create_gradio_blocks(
     gmail_handler: GmailHandler,
     store: DocumentStore,
 ) -> gr.Blocks:
-    with gr.Blocks(title="Resumi") as demo:
+    
+    # --- Container
+    with gr.Blocks(
+    title="Resumi", 
+    theme=theme, 
+    css=custom_css
+    ) as demo:
+        gr.Markdown(
+                    "# Resumi\nSynchroniser vos mails, synthétiser un fichier audio ou classer des documents."
+                )
         with gr.Tabs():
             # ── Tab 1: Chat Assistant ──────────────────────────────────
             with gr.Tab("Chat"):
-                gr.Markdown(
-                    "# Resumi\nSynchronise Gmail, puis discute avec l'assistant.\n"
-                    "💡 *Demande un brouillon de réponse "
-                    "à un mail directement ici.*"
-                )
-
-                initial_msgs = _initial_messages(gmail_handler)
+                
                 connected = gmail_handler.is_connected()
 
+                # --- message de bienvenue
+                initial_msgs = [
+                    {"role": "assistant", "content": "Bonjour ! Que voulez-vous faire aujourd'hui ?"}
+                ]
+
+                # --- chatbox
                 chatbot = gr.Chatbot(
-                    label="Conversation",
                     type="messages",
                     allow_tags=False,
                     value=initial_msgs,
+                    label="",
+                    show_label=False
                 )
 
+                # --- message input + audio buttons 
+                with gr.Row():
+                    message = gr.Textbox(
+                        placeholder="Demander à Resumi",
+                        scale=6,
+                        lines=1,
+                        container=False,
+                    )
+                    btn_mic = gr.Button("🎙️", variant="secondary", scale=1, min_width=120)
+                    btn_stop = gr.Button("🛑", variant="stop", scale=1, min_width=80)
+
+                # --- connexion to gmail
                 with gr.Row():
                     gmail_connect_btn = gr.Button(
-                        "🔗 Connecter Gmail",
-                        visible=not connected,
-                        variant="primary",
-                    )
-                    gmail_sync_btn = gr.Button(
-                        "🔄 Synchroniser Gmail",
-                        visible=connected,
-                        variant="secondary",
+                        "Se connecter", variant="primary", scale=1, min_width=150,
                     )
 
-                gmail_status = gr.Textbox(
-                    label="Statut Gmail",
-                    visible=False,
-                    interactive=False,
-                )
-
-                def handle_gmail_connect(
-                    history: list[dict[str, str]],
-                ) -> Generator[
-                    tuple[list[dict[str, str]], dict, dict, dict],
-                    None,
-                    None,
-                ]:
-                    ok = gmail_handler.connect()
-                    if not ok:
-                        updated = history + [
-                            {
-                                "role": "assistant",
-                                "content": (
-                                    "La connexion Gmail a échoué. "
-                                    "Vérifie que le fichier "
-                                    "client-secret est présent "
-                                    "dans credentials/ et réessaie."
-                                ),
-                            }
-                        ]
-                        yield (
-                            updated,
-                            gr.update(visible=True),
-                            gr.update(visible=False),
-                            gr.update(visible=False),
-                        )
-                        return
-
-                    connected_msg = history + [
-                        {
-                            "role": "assistant",
-                            "content": (
-                                "Gmail connecté avec succès ! "
-                                "Synchronisation automatique…"
-                            ),
-                        }
-                    ]
-                    yield (
-                        connected_msg,
-                        gr.update(visible=False),
-                        gr.update(visible=True),
-                        gr.update(visible=False),
+                    gmail_status = gr.Textbox(
+                        value="Gmail : connecté" if connected else "Gmail : non connecté",
+                        container=False, interactive=False, scale=6, lines=1,
                     )
 
-                    # Auto-sync right after connecting
-                    for h in _run_sync_steps(gmail_handler, agent, connected_msg):
-                        yield (
-                            h,
-                            gr.update(visible=False),
-                            gr.update(visible=True),
-                            gr.update(visible=False),
-                        )
+
+                # --- others
+                with gr.Accordion("Sources consultées", open=False):
+                    sources = gr.JSON(label="Sources RAG", show_label=False)
+
+                is_rec  = gr.State(False)
+
+                # --- functions connexion to gmail
+
+                def handle_gmail_btn(history: list[dict[str, str]]):
+                    if not gmail_handler.is_connected():
+                        ok = gmail_handler.connect()
+                        if not ok:
+                            yield history, "La connexion Gmail a échoué. Vérifie que le fichier client-secret est présent dans credentials/ et réessaie.", gr.update(value="Connexion")
+                            return
+                        
+                        yield history, "Gmail : connecté", gr.update(value="Synchronisation", variant="secondary")
+
+                    # Lancement de la synchro
+                    for new_history in _run_sync_steps(gmail_handler, agent, history):
+                        yield new_history, "Synchronisation en cours...", gr.update()
 
                 gmail_connect_btn.click(
-                    fn=handle_gmail_connect,
+                    fn=handle_gmail_btn,
                     inputs=[chatbot],
-                    outputs=[chatbot, gmail_connect_btn, gmail_sync_btn, gmail_status],
+                    outputs=[chatbot, gmail_status, gmail_connect_btn],
                 )
-
-                def handle_gmail_sync(
-                    history: list[dict[str, str]],
-                ) -> Generator[list[dict[str, str]], None, None]:
-                    yield from _run_sync_steps(gmail_handler, agent, history)
-
-                gmail_sync_btn.click(
-                    fn=handle_gmail_sync,
-                    inputs=[chatbot],
-                    outputs=[chatbot],
-                )
-
-                # Auto-sync on page load if mails are stale
+ 
+                # Auto-sync on load if stale
                 needs_auto_sync = connected and (
                     gmail_handler.sync_age_hours() is None
                     or (gmail_handler.sync_age_hours() or 0) >= _STALE_HOURS
                 )
-
+ 
                 def auto_sync_on_load(
                     history: list[dict[str, str]],
-                ) -> Generator[list[dict[str, str]], None, None]:
+                ) -> Generator[tuple[list[dict[str, str]], str], None, None]:
                     if not needs_auto_sync:
-                        yield history
+                        yield history, "Gmail : connecté"
                         return
-                    yield from _run_sync_steps(gmail_handler, agent, history)
+                    for history, status in handle_gmail_btn(history):
+                        yield history, status
+ 
+                #demo.load(fn=auto_sync_on_load, inputs=[chatbot], outputs=[chatbot, gmail_status])
 
-                demo.load(
-                    fn=auto_sync_on_load,
-                    inputs=[chatbot],
-                    outputs=[chatbot],
-                )
-
-                message = gr.Textbox(
-                    label="Message",
-                    placeholder="Pose une question ou demande un brouillon de réponse…",
-                )
-
-                sources = gr.JSON(label="Sources RAG")
-
+                # --- functions responses from agents
                 def respond(
                     text: str,
                     history: list[dict[str, str]],
-                ) -> tuple[
-                    list[dict[str, str]],
-                    str,
-                    list[dict[str, object]],
-                ]:
+                ) -> tuple[list[dict[str, str]], str, list[dict[str, object]]]:
                     result = ask(agent, text, history)
-
                     updated = history + [
                         {"role": "user", "content": text},
-                        {
-                            "role": "assistant",
-                            "content": str(result["answer"]),
-                        },
+                        {"role": "assistant", "content": str(result["answer"])},
                     ]
+                    return updated, "", result.get("sources", [])  # type: ignore[return-value]
+ 
+                # --- functions mic
+                def agent_voice_respond(transcript: str, history: list[dict[str, str]]):
+                    if not transcript or transcript.startswith("("):
+                        return history, []
 
-                    source_list = result.get("sources", [])
+                    result = ask(agent, transcript, history[:-2]) # On enlève les 2 derniers (user + loading) pour l'appel
+                    
+                    new_history = history[:-1] + [
+                        {"role": "assistant", "content": str(result["answer"])}
+                    ]
+                    return new_history, result.get("sources", [])
 
-                    return updated, "", source_list  # type: ignore[return-value]
+                # Un état caché pour stocker le texte transcrit entre les deux étapes
+                temp_transcript = gr.State("")
 
-                message.submit(
-                    respond,
-                    inputs=[message, chatbot],
-                    outputs=[chatbot, message, sources],
+                chat_event = message.submit(respond, inputs=[message, chatbot], outputs=[chatbot, message, sources])
+               
+                def handle_mic(recording: bool, history: list[dict[str, str]]):
+                    if not recording:
+                        start_recording()
+                        return True, gr.update(value="⏹", variant="stop"), history, ""
+                    else:
+                        _, transcript = stop_recording()
+                        if not transcript or transcript.startswith("("):
+                            return False, gr.update(value="🎙️", variant="secondary"), history, ""
+                        
+                        new_history = history + [
+                            {"role": "user", "content": transcript},
+                            {"role": "assistant", "content": "*En train de réfléchir...*"}
+                        ]
+                        return False, gr.update(value="🎙️", variant="secondary"), new_history, transcript
+
+                voice_event = btn_mic.click(
+                    fn=handle_mic,
+                    inputs=[is_rec, chatbot],
+                    outputs=[is_rec, btn_mic, chatbot, temp_transcript],
+                ).then(
+                    fn=agent_voice_respond,
+                    inputs=[temp_transcript, chatbot],
+                    outputs=[chatbot, sources],
+                )
+
+                btn_stop.click(
+                    fn=lambda: (False, gr.update(value="🎙️", variant="secondary", interactive=True), gr.update(visible=False)),
+                    outputs=[is_rec, btn_mic, btn_stop],
+                    cancels=[chat_event, voice_event]
                 )
 
             # ── Tab 2: Upload Documents ────────────────────────────────
-            with gr.Tab("Documents"):
-                gr.Markdown("## Documents uploadés")
 
-                doc_headers = ["Nom", "Catégorie", "Date"]
+
+            with gr.Tab("Documents"):
+                
+                # Zone d'ajout rétractable pour ne pas encombrer l'écran
+                with gr.Accordion("Ajouter de nouveaux documents", open=False):
+
+                    folder_input = gr.Textbox(
+                            label="Dossier cible (obligatoire)",
+                            placeholder="ex: factures_2024",
+                            scale=2
+                        )
+                    
+
+                    with gr.Row():
+                        with gr.Column(scale=1): # On donne plus de poids à l'upload
+                            file_input = gr.File(
+                                file_count="multiple",
+                                label="Déposez vos fichiers ici", elem_classes=["dashed-upload"],
+                                scale=4
+                            )
+
+                        with gr.Column(scale=1): # Moins de poids pour le bouton live
+                            record_name = gr.Textbox(
+                                label="Nom de l'enregistrement",
+                                placeholder="ex: réunion_équipe",
+                                scale=2
+                            )
+                        
+                        
+                            btn_record = gr.Button("🎙️ Lancer l'enregistrement live", variant="primary", scale=1)
+                            record_status = gr.Textbox(
+                                value="",
+                                container=False,
+                                interactive=False,
+                                scale=3,
+                                label=""
+                            )
+
+                    upload_btn = gr.Button("Lancer l'indexation", variant="primary")
+
+
+                is_doc_rec = gr.State(False)
+
+                with gr.Row():
+                    gr.Markdown("## Documents indexés")
+                    with gr.Row(): # Boutons d'action compacts en haut à droite
+                        refresh_docs_btn = gr.Button("Rafraîchir", variant="secondary", min_width=50)
+                        classify_docs_btn = gr.Button("Classifier", variant="primary")
+
+                # La table devient l'élément central
                 doc_table = gr.Dataframe(
-                    headers=doc_headers,
+                    headers=["Nom", "Catégorie", "Date"],
                     value=_build_doc_table(store),
                     interactive=False,
                     wrap=True,
                 )
 
-                with gr.Row():
-                    classify_docs_btn = gr.Button(
-                        "🏷️ Classifier les documents",
-                        variant="secondary",
-                    )
-                    refresh_docs_btn = gr.Button(
-                        "🔄 Rafraîchir",
-                        variant="secondary",
-                    )
+                def handle_doc_recording(recording: bool, name: str, folder: str):
+                    if not recording:
+                        start_recording()
+                        return True, gr.update(value="⏹ Arrêter", variant="stop"), "⏺ Enregistrement en cours..."
+                    else:
+                        _, transcript = stop_recording()
+                        if not transcript or transcript.startswith("("):
+                            return False, gr.update(value="🎙️ Démarrer", variant="primary"), "Aucun audio capturé."
+                        
+                        rec_name = name.strip() or "enregistrement"
+                        txt_filename = f"{rec_name}.txt"
+                        txt_path = os.path.join(tempfile.gettempdir(), txt_filename)
+                        
+                        with open(txt_path, "w", encoding="utf-8") as f:
+                            f.write(transcript)
+                        
+                        folder_name = folder.strip() or "enregistrements"
+                        msg = document_loader.save_files([txt_path], folder_name)
+                        
+                        return False, gr.update(value="🎙️ Démarrer", variant="primary"), f"✅ {msg}"
 
-                classify_status = gr.Textbox(
-                    label="Statut classification",
-                    interactive=False,
-                )
-
-                def classify_docs() -> tuple[str, list[list[str]]]:
-                    n = run_async(agent.classify_uncategorized_docs())
-                    return (
-                        f"✅ {n} document(s) classifié(s).",
-                        _build_doc_table(store),
-                    )
-
-                classify_docs_btn.click(
-                    fn=classify_docs,
-                    outputs=[classify_status, doc_table],
-                )
-
-                refresh_docs_btn.click(
+                btn_record.click(
+                    fn=handle_doc_recording,
+                    inputs=[is_doc_rec, record_name, folder_input],
+                    outputs=[is_doc_rec, btn_record, record_status],
+                ).then(
                     fn=lambda: _build_doc_table(store),
-                    outputs=[doc_table],
-                )
+                    outputs=[doc_table]
+)
+                def handle_upload_v2(files, folder_name):
+                    if files is None:
+                        return _build_doc_table(store)
+                    
+                    processed_paths = []
+                    
+                    for f in files:
+                        if isinstance(f, dict):
+                            file_path = f['name']
+                        else:
+                            file_path = f.name
+                            
+                        
+                        if file_path.lower().endswith(('.mp3', '.mp4', '.wav', '.m4a')):
+                            status, transcript = transcribe_file(file_path)
+                            
+                            if transcript:
+                                clean_name = os.path.basename(file_path)
+                                name_only = os.path.splitext(clean_name)[0]
+                                txt_filename = f"{name_only}.txt"
+                                txt_path = os.path.join(os.path.dirname(file_path), txt_filename)
 
-                gr.Markdown("---\n### Ajouter des fichiers")
+                                with open(txt_path, "w", encoding="utf-8") as temp_file:
+                                    temp_file.write(transcript)
 
-                folder_input = gr.Textbox(
-                    label="Nom du dossier",
-                    placeholder="ex: cours_ml",
-                )
+                                processed_paths.append(txt_path)
 
-                file_input = gr.File(
-                    file_count="multiple",
-                    label="Ajouter des fichiers",
-                )
+                        else:
+                            processed_paths.append(file_path)
 
-                upload_btn = gr.Button("Uploader et indexer")
-
-                upload_status = gr.Textbox(label="Statut")
-
-                def handle_upload(files, folder_name) -> tuple[str, list[list[str]]]:
-                    msg = document_loader.save_files(files, folder_name)
-                    return msg, _build_doc_table(store)
-
-                upload_btn.click(
-                    fn=handle_upload,
-                    inputs=[file_input, folder_input],
-                    outputs=[upload_status, doc_table],
-                )
+                    if processed_paths:
+                        msg = document_loader.save_files(processed_paths, folder_name)
+                        print(f"DEBUG: DocumentLoader dit : {msg}")
+                                        
+                    return _build_doc_table(store)
+                                            
+                upload_btn.click(fn=handle_upload_v2, inputs=[file_input, folder_input], outputs=[doc_table], queue=True)
 
             # ── Tab 3: Mails (tableau) ─────────────────────────────────
             with gr.Tab("Mails"):
-                gr.Markdown("## Mails synchronisés et classifiés")
 
-                received_headers = ["Sujet", "Expéditeur", "Catégorie", "Date"]
-                sent_headers = ["Sujet", "Destinataire", "Catégorie", "Date"]
+                with gr.Row():
+                    gr.Markdown("## Mails synchronisés et classifiés")
+                    # Un petit bouton discret en haut à droite
+                    refresh_btn = gr.Button("Rafraîchir", variant="secondary", scale=0, min_width=150)
 
-                gr.Markdown("### 📥 Reçus")
-                received_table = gr.Dataframe(
-                    headers=received_headers,
-                    value=_build_mail_table(store, "received"),
-                    interactive=False,
-                    wrap=True,
-                )
+                with gr.Accordion("Mails reçus", open=True):
+                    received_table = gr.Dataframe(
+                        headers=["Sujet", "Expéditeur", "Catégorie", "Date"],
+                        value=_build_mail_table(store, "received"),
+                        interactive=False,
+                        wrap=True
+                    )
 
-                gr.Markdown("### 📤 Envoyés")
-                sent_table = gr.Dataframe(
-                    headers=sent_headers,
-                    value=_build_mail_table(store, "sent"),
-                    interactive=False,
-                    wrap=True,
-                )
-
-                refresh_btn = gr.Button("🔄 Rafraîchir")
+                with gr.Accordion("Mails envoyés", open=False): # Fermé par défaut pour gagner de la place
+                    sent_table = gr.Dataframe(
+                        headers=["Sujet", "Destinataire", "Catégorie", "Date"],
+                        value=_build_mail_table(store, "sent"),
+                        interactive=False,
+                        wrap=True
+                    )
 
                 def refresh_tables() -> tuple[list[list[str]], list[list[str]]]:
+                    gr.Info("Tableaux mis à jour")
                     return (
                         _build_mail_table(store, "received"),
                         _build_mail_table(store, "sent"),

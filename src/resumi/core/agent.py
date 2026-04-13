@@ -4,6 +4,7 @@ from openai import AsyncOpenAI
 
 from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import DocumentMatch, FaissKnowledgeBase
+from resumi.core.langchain_agent import build_langchain_agent
 from resumi.core.mail_tools import classify_and_store as _classify_and_store
 from resumi.core.mail_tools import classify_email as _classify_email
 from resumi.core.mail_tools import draft_email_reply as _draft_email_reply
@@ -29,6 +30,7 @@ class Agent:
             api_key=api_key,
             base_url=base_url or None,
         )
+        self._lc_agent = build_langchain_agent(model=model, api_key=api_key)
 
     async def chat(
         self,
@@ -36,6 +38,22 @@ class Agent:
         message: str,
         history: list[dict[str, str]] | None = None,
     ) -> dict[str, object]:
+        # --- Agent LangChain (tool calling) ---
+        try:
+            result = self._lc_agent.invoke(
+                {"messages": [{"role": "user", "content": message}]}
+            )
+            final_message = result["messages"][-1].content
+
+            if isinstance(final_message, str) and final_message.strip():
+                return {
+                    "answer": final_message.strip(),
+                    "sources": [],
+                }
+        except Exception:
+            pass
+
+        # --- Fallback RAG actuel ---
         route = self._route(message)
         sources = self._search(message, route)
         temporal = self._temporal_context(message, route, history)
@@ -92,10 +110,13 @@ class Agent:
                 continue
         return classified
 
-    # -- routing -------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # Routing Gmail / general
+    # ----------------------------------------------------------------------
 
     def _route(self, message: str) -> dict[str, object]:
         n = f" {message.casefold()} "
+
         sent_kw = (
             " sent ",
             " envoye ",
@@ -112,6 +133,7 @@ class Agent:
             " ai-je repondu ",
             " ai je repondu ",
         )
+
         recv_kw = (
             " received ",
             " recu ",
@@ -126,14 +148,21 @@ class Agent:
             " qui m'a ecrit ",
             " qui m a ecrit ",
         )
+
         if any(k in n for k in sent_kw):
-            return {"label": "sent", "prefixes": ["from_gmail/sent/"], "strict": True}
+            return {
+                "label": "sent",
+                "prefixes": ["from_gmail/sent/"],
+                "strict": True,
+            }
+
         if any(k in n for k in recv_kw):
             return {
                 "label": "received",
                 "prefixes": ["from_gmail/received/"],
                 "strict": False,
             }
+
         return {"label": "all", "prefixes": None, "strict": False}
 
     # -- temporal ------------------------------------------------------------
@@ -187,7 +216,6 @@ class Agent:
         if any(k in n for k in self._TEMPORAL_KW):
             return True
         if any(k in n for k in self._REFERENCE_KW) and history:
-            # Only trigger if conversation recently mentioned a mail
             recent = [
                 h["content"]
                 for h in (history or [])[-4:]
@@ -244,14 +272,24 @@ class Agent:
     def _search(self, message: str, route: dict[str, object]) -> list[DocumentMatch]:
         raw_prefixes = route.get("prefixes")
         prefixes = raw_prefixes if isinstance(raw_prefixes, list) else None
+
         if prefixes:
             scoped = self._kb.search(
-                query=message, limit=self._search_limit, prefixes=prefixes
+                query=message,
+                limit=self._search_limit,
+                prefixes=prefixes,
             )
+
             if route.get("strict") or len(scoped) >= min(2, self._search_limit):
                 return scoped
-            fallback = self._kb.search(query=message, limit=self._search_limit)
+
+            fallback = self._kb.search(
+                query=message,
+                limit=self._search_limit,
+            )
+
             return self._merge(scoped, fallback)
+
         return self._kb.search(query=message, limit=self._search_limit)
 
     def _merge(
@@ -259,17 +297,24 @@ class Agent:
     ) -> list[DocumentMatch]:
         merged: list[DocumentMatch] = []
         seen: set[tuple[str, int | None]] = set()
+
         for s in [*a, *b]:
             key = (s.relative_path, s.chunk_index)
+
             if key in seen:
                 continue
+
             seen.add(key)
             merged.append(s)
+
             if len(merged) >= self._search_limit:
                 break
+
         return merged
 
-    # -- LLM -----------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # LLM
+    # ----------------------------------------------------------------------
 
     async def _answer(
         self,
@@ -289,6 +334,7 @@ class Agent:
             parts.append(f"Données temporelles (SQLite):\n{temporal}")
         parts.append(f"Contexte RAG:\n{ctx}")
         user_input = "\n\n".join(parts)
+
         resp = await self._client.responses.create(
             model=self._model,
             instructions=(
@@ -307,16 +353,21 @@ class Agent:
             ),
             input=user_input,
         )
+
         text = resp.output_text.strip()
+
         if text:
             return text
+
         return (
             "Je n'ai pas pu générer de réponse. "
             "Réessaie après avoir indexé plus de documents."
         )
 
     def _build_context(
-        self, sources: list[DocumentMatch], route: dict[str, object]
+        self,
+        sources: list[DocumentMatch],
+        route: dict[str, object],
     ) -> str:
         if not sources:
             return (
@@ -324,16 +375,23 @@ class Agent:
                 "Aucun document pertinent n'a encore été indexé. "
                 "Invite l'utilisateur à envoyer un audio ou lancer la sync Gmail."
             )
+
         parts = [f"Routage: {route['label']}"]
+
         for s in sources:
             chunk = self._kb.read_chunk(
                 relative_path=s.relative_path,
                 chunk_index=s.chunk_index,
             )
+
             snippet = (s.excerpt or chunk)[:1800].strip()
+
             parts.append(
-                f"Source: {s.relative_path}\nBoîte: {s.mailbox or 'all'}\n"
-                f"Chunk: {s.chunk_index}\nScore: {s.score:.3f}\nContenu:\n{snippet}"
+                f"Source: {s.relative_path}\n"
+                f"Boîte: {s.mailbox or 'all'}\n"
+                f"Chunk: {s.chunk_index}\n"
+                f"Score: {s.score:.3f}\n"
+                f"Contenu:\n{snippet}"
             )
         return "\n\n---\n\n".join(parts)
 
@@ -345,7 +403,6 @@ class Agent:
         """Format recent conversation history for the LLM."""
         if not history:
             return "(aucun historique)"
-        # Keep only user/assistant messages, skip system/sync messages
         turns = [h for h in history if h.get("role") in ("user", "assistant")]
         recent = turns[-max_turns * 2 :]
         lines: list[str] = []
