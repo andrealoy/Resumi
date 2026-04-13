@@ -218,7 +218,6 @@ def create_gradio_blocks(
                             headers=["Date", "Heure", "Événement"],
                             value=_build_calendar_table(),
                             interactive=False,
-                            # On peut ajouter ceci pour que le tableau s'adapte bien au gris
                             type="pandas",
                         )
 
