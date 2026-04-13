@@ -8,11 +8,6 @@ import threading
 import numpy as np
 from scipy.io.wavfile import write as wav_write
 from openai import OpenAI
-from dotenv import load_dotenv
-
-# Initialisation du client (vérifie que OPENAI_API_KEY est dans ton .env)
-load_dotenv()
-client = OpenAI()
 
 # ──────────────────────────────────────────
 # CONFIGURATION
@@ -20,6 +15,16 @@ client = OpenAI()
 SAMPLE_RATE    = 16000
 CHUNK_SECONDS  = 0.5
 LANGUAGE       = "fr"
+
+# Lazy-initialised OpenAI client (avoids crash when OPENAI_API_KEY is missing
+# at import time, e.g. during CI test collection).
+_client: OpenAI | None = None
+
+def _get_client() -> OpenAI:
+    global _client
+    if _client is None:
+        _client = OpenAI()
+    return _client
 
 # ── State ─────────────────────────────────
 _audio_queue:   queue.Queue = queue.Queue()
@@ -30,7 +35,7 @@ _is_recording   = False
 def _api_transcribe(file_path: str) -> str:
     """Helper interne pour appeler l'API OpenAI."""
     with open(file_path, "rb") as audio_file:
-        transcript = client.audio.transcriptions.create(
+        transcript = _get_client().audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
             language=LANGUAGE
