@@ -5,6 +5,8 @@ from typing import cast
 
 import gradio as gr
 
+
+
 from resumi.core.agent import Agent
 from resumi.core.document_loader import DocumentLoader
 from resumi.core.document_store import DocumentStore
@@ -164,6 +166,19 @@ def _build_doc_table(store: DocumentStore) -> list[list[str]]:
         rows.append([title, category, date])
     return rows
 
+def _build_calendar_table() -> list[list[str]]:
+    """Lit le calendrier local CSV pour l'affichage Gradio."""
+    import os
+    import pandas as pd
+    file_path = "local_calendar.csv"
+    if os.path.exists(file_path):
+        try:
+            df = pd.read_csv(file_path)
+            return df.values.tolist()
+        except:
+            return []
+    return []
+
 
 def create_gradio_blocks(
     *,
@@ -186,12 +201,22 @@ def create_gradio_blocks(
                 initial_msgs = _initial_messages(gmail_handler)
                 connected = gmail_handler.is_connected()
 
-                chatbot = gr.Chatbot(
-                    label="Conversation",
-                    type="messages",
-                    allow_tags=False,
-                    value=initial_msgs,
-                )
+                with gr.Row():
+                    with gr.Column(scale=2): # Colonne Chat
+                        chatbot = gr.Chatbot(
+                            label="Conversation",
+                            type="messages",
+                            allow_tags=False,
+                            value=initial_msgs,
+                        )
+                    
+                    with gr.Column(scale=1): # Nouveau Widget Calendrier
+                        gr.Markdown("### 🗓️ Mon Agenda")
+                        calendar_table = gr.Dataframe(
+                            headers=["Date", "Heure", "Événement"],
+                            value=_build_calendar_table(),
+                            interactive=False,
+                        )
 
                 with gr.Row():
                     gmail_connect_btn = gr.Button(
@@ -315,6 +340,7 @@ def create_gradio_blocks(
                     list[dict[str, str]],
                     str,
                     list[dict[str, object]],
+                    list[list[str]], 
                 ]:
                     result = ask(agent, text, history)
 
@@ -327,13 +353,14 @@ def create_gradio_blocks(
                     ]
 
                     source_list = result.get("sources", [])
-
-                    return updated, "", source_list  # type: ignore[return-value]
+                    
+                    # On renvoie aussi le contenu du CSV mis à jour
+                    return updated, "", source_list, _build_calendar_table() 
 
                 message.submit(
                     respond,
                     inputs=[message, chatbot],
-                    outputs=[chatbot, message, sources],
+                    outputs=[chatbot, message, sources, calendar_table], # Ajout ici
                 )
 
             # ── Tab 2: Upload Documents ────────────────────────────────
