@@ -4,10 +4,10 @@ from openai import AsyncOpenAI
 
 from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import DocumentMatch, FaissKnowledgeBase
+from resumi.core.langchain_agent import build_langchain_agent
 from resumi.core.mail_tools import classify_and_store as _classify_and_store
 from resumi.core.mail_tools import classify_email as _classify_email
 from resumi.core.mail_tools import draft_email_reply as _draft_email_reply
-from resumi.core.web_search import web_search
 
 
 class Agent:
@@ -30,6 +30,7 @@ class Agent:
             api_key=api_key,
             base_url=base_url or None,
         )
+        self._lc_agent = build_langchain_agent(model=model, api_key=api_key)
 
     async def chat(
         self,
@@ -37,26 +38,22 @@ class Agent:
         message: str,
         history: list[dict[str, str]] | None = None,
     ) -> dict[str, object]:
-        # --- Web search routing ---
-        if self._should_use_web_search(message):
-            raw = web_search(message)
-
-            resp = await self._client.responses.create(
-                model=self._model,
-                instructions=(
-                    "Tu es un assistant utile et concis. "
-                    "Améliore, reformule et clarifie la réponse suivante de manière "
-                    "naturelle et fiable en français. "
-                    "Si la réponse est limitée ou incomplète, dis-le clairement."
-                ),
-                input=raw,
+        # --- Agent LangChain (tool calling) ---
+        try:
+            result = self._lc_agent.invoke(
+                {"messages": [{"role": "user", "content": message}]}
             )
+            final_message = result["messages"][-1].content
 
-            return {
-                "answer": resp.output_text.strip(),
-                "sources": [],
-            }
+            if isinstance(final_message, str) and final_message.strip():
+                return {
+                    "answer": final_message.strip(),
+                    "sources": [],
+                }
+        except Exception:
+            pass
 
+        # --- Fallback RAG actuel ---
         route = self._route(message)
         sources = self._search(message, route)
         temporal = self._temporal_context(message, route, history)
@@ -112,31 +109,6 @@ class Agent:
             except Exception:
                 continue
         return classified
-
-    # ----------------------------------------------------------------------
-    # Web search routing
-    # ----------------------------------------------------------------------
-
-    def _should_use_web_search(self, message: str) -> bool:
-        n = message.casefold()
-
-        web_keywords = (
-            "recherche web",
-            "cherche sur le web",
-            "cherche sur internet",
-            "sur internet",
-            "sur le web",
-            "web search",
-            "search the web",
-            "search online",
-            "internet",
-            "actualité",
-            "news",
-            "météo",
-            "weather",
-        )
-
-        return any(k in n for k in web_keywords)
 
     # ----------------------------------------------------------------------
     # Routing Gmail / general
