@@ -13,6 +13,10 @@ from resumi.core.gmail_handler import GmailHandler
 from resumi.core.mail_loader import MailLoader
 from resumi.ui.chat import ask, run_async
 
+import os
+from datetime import datetime
+import tempfile
+
 # Threshold (hours) beyond which we consider the mail sync stale.
 _STALE_HOURS = 24.0
 
@@ -113,10 +117,11 @@ def _build_doc_table(store: DocumentStore) -> list[list[str]]:
     docs = store.search(doc_type="doc", limit=100)
     rows: list[list[str]] = []
     for d in docs:
-        title = str(d.get("title", ""))
-        category = str(d.get("category", "")) or "—"
-        date = str(d.get("date", ""))[:10]
-        rows.append([title, category, date])
+        if d.get("type") in ["doc", "audio"]:
+            title = str(d.get("title", ""))
+            category = str(d.get("category", "")) or "—"
+            date = str(d.get("date", ""))[:10]
+            rows.append([title, category, date])
     return rows
 
 # --- Thème de l'interface 
@@ -141,6 +146,18 @@ theme = gr.themes.Soft(
     container_radius="12px",
 )
 
+custom_css = """
+.dashed-upload {
+    border: 2px dashed #546e7a !important; /* Couleur gris-bleu */
+    border-radius: 10px !important;
+    background: transparent !important;
+}
+/* Pour cibler spécifiquement la zone de drag & drop interne de Gradio */
+.dashed-upload .file-preview {
+    border: none !important;
+}
+"""
+
 # --- INTERFACE UI
 def create_gradio_blocks(
     *,
@@ -155,7 +172,7 @@ def create_gradio_blocks(
     with gr.Blocks(
     title="Resumi", 
     theme=theme, 
-    css=""
+    css=custom_css
     ) as demo:
         gr.Markdown(
                     "# Resumi\nSynchroniser vos mails, synthétiser un fichier audio ou classer des documents."
@@ -260,22 +277,9 @@ def create_gradio_blocks(
                     return updated, "", result.get("sources", [])  # type: ignore[return-value]
  
                 # --- functions mic
-
-                def stop_and_transcribe(history: list[dict[str, str]]):
-                    _, transcript = stop_recording()
-                    
-                    if transcript and not transcript.startswith("("):
-                        new_history = history + [
-                            {"role": "user", "content": transcript},
-                            {"role": "assistant", "content": "*En train de réfléchir...*"}
-                        ]
-                        return False, gr.update(value="🎙️", variant="secondary"), new_history, transcript
-                    
-                    return False, gr.update(value="🎙️", variant="secondary"), history, ""
-
                 def agent_voice_respond(transcript: str, history: list[dict[str, str]]):
                     if not transcript or transcript.startswith("("):
-                        return history, ""
+                        return history, []
 
                     result = ask(agent, transcript, history[:-2]) # On enlève les 2 derniers (user + loading) pour l'appel
                     
@@ -284,57 +288,34 @@ def create_gradio_blocks(
                     ]
                     return new_history, result.get("sources", [])
 
-
-                '''def toggle_mic(recording: bool, history: list[dict[str, str]]):
-                    if not recording:
-                        # Start recording
-                        start_recording()
-                        return (
-                            True,
-                            gr.update(value="⏹", variant="stop"),
-                            history,
-                            "",
-                        )
-                    else:
-                        # Stop and transcribe
-                        _, transcript = stop_recording()
-                        new_history = history
-                        if transcript and not transcript.startswith("("):
-                            result = ask(agent, transcript, history)
-                            new_history = history + [
-                                {"role": "user",      "content": f"{transcript}"},
-                                {"role": "assistant", "content": str(result["answer"])},
-                            ]
-                        return (
-                            False,
-                            gr.update(value="▶", variant="secondary"),
-                            new_history,
-                            "",
-                        )'''
- 
                 # Un état caché pour stocker le texte transcrit entre les deux étapes
                 temp_transcript = gr.State("")
 
                 chat_event = message.submit(respond, inputs=[message, chatbot], outputs=[chatbot, message, sources])
                
+                def handle_mic(recording: bool, history: list[dict[str, str]]):
+                    if not recording:
+                        start_recording()
+                        return True, gr.update(value="⏹", variant="stop"), history, ""
+                    else:
+                        _, transcript = stop_recording()
+                        if not transcript or transcript.startswith("("):
+                            return False, gr.update(value="🎙️", variant="secondary"), history, ""
+                        
+                        new_history = history + [
+                            {"role": "user", "content": transcript},
+                            {"role": "assistant", "content": "*En train de réfléchir...*"}
+                        ]
+                        return False, gr.update(value="🎙️", variant="secondary"), new_history, transcript
+
                 voice_event = btn_mic.click(
-                    fn=lambda r: (True, gr.update(value="⏹", variant="stop")) if not r else (False, gr.update(value="⏳", interactive=False)),
-                    inputs=[is_rec],
-                    outputs=[is_rec, btn_mic],
-                    show_progress=False
-                ).then(
-                    fn=lambda r, h: start_recording() if r else None,
-                    inputs=[is_rec, chatbot],
-                ).then(
-                    fn=lambda r, h: stop_and_transcribe(h) if not r else (True, gr.update(), h, ""),
+                    fn=handle_mic,
                     inputs=[is_rec, chatbot],
                     outputs=[is_rec, btn_mic, chatbot, temp_transcript],
-                    queue=True
                 ).then(
                     fn=agent_voice_respond,
                     inputs=[temp_transcript, chatbot],
                     outputs=[chatbot, sources],
-                    queue=True
                 )
 
                 btn_stop.click(
@@ -344,7 +325,50 @@ def create_gradio_blocks(
                 )
 
             # ── Tab 2: Upload Documents ────────────────────────────────
+
+
             with gr.Tab("Documents"):
+                
+                # Zone d'ajout rétractable pour ne pas encombrer l'écran
+                with gr.Accordion("Ajouter de nouveaux documents", open=False):
+
+                    folder_input = gr.Textbox(
+                            label="Dossier cible (obligatoire)",
+                            placeholder="ex: factures_2024",
+                            scale=2
+                        )
+                    
+
+                    with gr.Row():
+                        with gr.Column(scale=1): # On donne plus de poids à l'upload
+                            file_input = gr.File(
+                                file_count="multiple",
+                                label="Déposez vos fichiers ici", elem_classes=["dashed-upload"],
+                                scale=4
+                            )
+
+                        with gr.Column(scale=1): # Moins de poids pour le bouton live
+                            record_name = gr.Textbox(
+                                label="Nom de l'enregistrement",
+                                placeholder="ex: réunion_équipe",
+                                scale=2
+                            )
+                        
+                        
+                            btn_record = gr.Button("🎙️ Lancer l'enregistrement live", variant="primary", scale=1)
+                            record_status = gr.Textbox(
+                                value="",
+                                container=False,
+                                interactive=False,
+                                scale=3,
+                                label=""
+                            )
+
+                    upload_btn = gr.Button("Lancer l'indexation", variant="primary")
+
+
+                is_doc_rec = gr.State(False)
+
                 with gr.Row():
                     gr.Markdown("## Documents indexés")
                     with gr.Row(): # Boutons d'action compacts en haut à droite
@@ -359,28 +383,72 @@ def create_gradio_blocks(
                     wrap=True,
                 )
 
-                # Zone d'ajout rétractable pour ne pas encombrer l'écran
-                with gr.Accordion("Ajouter de nouveaux documents", open=False):
-                    with gr.Row():
-                        folder_input = gr.Textbox(
-                            label="Dossier cible",
-                            placeholder="ex: factures_2024",
-                            scale=2
-                        )
-                        file_input = gr.File(
-                            file_count="multiple",
-                            label="Déposez vos fichiers ici",
-                            scale=4
-                        )
-                    upload_btn = gr.Button("Lancer l'indexation", variant="primary")
+                def handle_doc_recording(recording: bool, name: str, folder: str):
+                    if not recording:
+                        start_recording()
+                        return True, gr.update(value="⏹ Arrêter", variant="stop"), "⏺ Enregistrement en cours..."
+                    else:
+                        _, transcript = stop_recording()
+                        if not transcript or transcript.startswith("("):
+                            return False, gr.update(value="🎙️ Démarrer", variant="primary"), "Aucun audio capturé."
+                        
+                        rec_name = name.strip() or "enregistrement"
+                        txt_filename = f"{rec_name}.txt"
+                        txt_path = os.path.join(tempfile.gettempdir(), txt_filename)
+                        
+                        with open(txt_path, "w", encoding="utf-8") as f:
+                            f.write(transcript)
+                        
+                        folder_name = folder.strip() or "enregistrements"
+                        msg = document_loader.save_files([txt_path], folder_name)
+                        
+                        return False, gr.update(value="🎙️ Démarrer", variant="primary"), f"✅ {msg}"
 
-                # Suppression du gr.Textbox "Statut" au profit de gr.Info dans la fonction
+                btn_record.click(
+                    fn=handle_doc_recording,
+                    inputs=[is_doc_rec, record_name, folder_input],
+                    outputs=[is_doc_rec, btn_record, record_status],
+                ).then(
+                    fn=lambda: _build_doc_table(store),
+                    outputs=[doc_table]
+)
                 def handle_upload_v2(files, folder_name):
-                    msg = document_loader.save_files(files, folder_name)
-                    gr.Info(msg) # Notification flottante au lieu d'un bloc fixe
-                    return _build_doc_table(store)
+                    if files is None:
+                        return _build_doc_table(store)
+                    
+                    processed_paths = []
+                    
+                    for f in files:
+                        if isinstance(f, dict):
+                            file_path = f['name']
+                        else:
+                            file_path = f.name
+                            
+                        
+                        if file_path.lower().endswith(('.mp3', '.mp4', '.wav', '.m4a')):
+                            status, transcript = transcribe_file(file_path)
+                            
+                            if transcript:
+                                clean_name = os.path.basename(file_path)
+                                name_only = os.path.splitext(clean_name)[0]
+                                txt_filename = f"{name_only}.txt"
+                                txt_path = os.path.join(os.path.dirname(file_path), txt_filename)
 
-                upload_btn.click(fn=handle_upload_v2, inputs=[file_input, folder_input], outputs=[doc_table])
+                                with open(txt_path, "w", encoding="utf-8") as temp_file:
+                                    temp_file.write(transcript)
+
+                                processed_paths.append(txt_path)
+
+                        else:
+                            processed_paths.append(file_path)
+
+                    if processed_paths:
+                        msg = document_loader.save_files(processed_paths, folder_name)
+                        print(f"DEBUG: DocumentLoader dit : {msg}")
+                                        
+                    return _build_doc_table(store)
+                                            
+                upload_btn.click(fn=handle_upload_v2, inputs=[file_input, folder_input], outputs=[doc_table], queue=True)
 
             # ── Tab 3: Mails (tableau) ─────────────────────────────────
             with gr.Tab("Mails"):
