@@ -5,7 +5,7 @@ from __future__ import annotations
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
-from resumi.core.tools import calculator_tool, web_search_tool
+from resumi.core.tools import calculator_tool, web_search_tool, rag_tool, calendar_tool
 
 
 def build_langchain_agent(model: str, api_key: str):
@@ -16,7 +16,7 @@ def build_langchain_agent(model: str, api_key: str):
 
     agent = create_agent(
         model=llm,
-        tools=[calculator_tool, web_search_tool],
+        tools=[calculator_tool, web_search_tool, rag_tool, calendar_tool],
         system_prompt=(
             "Tu es Resumi, un assistant utile et concis. "
             "Tu peux utiliser des outils quand c'est nécessaire. "
