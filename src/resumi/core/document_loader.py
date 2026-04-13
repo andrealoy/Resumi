@@ -6,7 +6,6 @@ from typing import Any
 from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import FaissKnowledgeBase
 
-
 class DocumentLoader:
     def __init__(
         self,
@@ -27,10 +26,17 @@ class DocumentLoader:
         dest.mkdir(parents=True, exist_ok=True)
 
         saved = 0
+
         for f in files or []:
-            if not hasattr(f, "name"):
+            if hasattr(f, "name"):
+                src_path = Path(f.name)
+            elif isinstance(f, (str, Path)):
+                src_path = Path(f)
+                print(src_path)
+            else:
                 continue
-            src_path = Path(f.name)
+
+            #src_path = Path(f.name)
             if not src_path.exists():
                 continue
             target = dest / src_path.name
