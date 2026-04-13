@@ -4,6 +4,8 @@ from __future__ import annotations
 from langchain_core.tools import tool
 
 import ast
+import pandas as pd
+import os
 from datetime import datetime
 import operator as op
 from typing import Callable
@@ -76,21 +78,28 @@ def rag_tool(agent, question: str) -> str:
     return f"{context}\n\nCitations possibles:\n{citations}"
 
 
+
+CALENDAR_FILE = "local_calendar.csv"
+
 @tool
 def calendar_tool(event_details: str, date_time: str) -> str:
-    """
-    Enregistre un événement dans le calendrier. 
-    L'argument 'event_details' est la description du RDV.
-    L'argument 'date_time' doit être une date au format ISO (YYYY-MM-DD HH:MM).
-    """
-    
+    """Enregistre un événement dans le calendrier local."""
     try:
-        # Simulation d'une validation de format de date
         dt = datetime.strptime(date_time, "%Y-%m-%d %H:%M")
-        format_date = dt.strftime("%A %d %B %Y à %H:%M")
         
-        # Logique de succès
-        return f"CONFIRMATION : L'événement '{event_details}' a été ajouté au calendrier pour le {format_date}."
-    
-    except ValueError:
-        return "ERREUR : Le format de la date est invalide. Merci de préciser la date et l'heure clairement."
+        # Création d'une nouvelle ligne
+        new_event = {
+            "Date": dt.strftime("%Y-%m-%d"),
+            "Heure": dt.strftime("%H:%M"),
+            "Événement": event_details
+        }
+        
+        # Sauvegarde locale (CSV)
+        df = pd.read_csv(CALENDAR_FILE) if os.path.exists(CALENDAR_FILE) else pd.DataFrame()
+        df = pd.concat([df, pd.DataFrame([new_event])], ignore_index=True)
+        df = df.sort_values(by=["Date", "Heure"]) # On trie par date
+        df.to_csv(CALENDAR_FILE, index=False)
+        
+        return f"SUCCÈS : '{event_details}' ajouté pour le {dt.strftime('%d/%m/%Y à %H:%M')}."
+    except Exception as e:
+        return f"ERREUR : {str(e)}"
