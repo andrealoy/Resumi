@@ -3,6 +3,7 @@
 from openai import AsyncOpenAI
 
 from resumi.core.embedding import DocumentMatch, FaissKnowledgeBase
+from resumi.core.web_search import web_search
 
 
 class Agent:
@@ -25,6 +26,27 @@ class Agent:
         )
 
     async def chat(self, *, message: str) -> dict[str, object]:
+        # --- Web search routing ---
+        if self._should_use_web_search(message):
+            raw = web_search(message)
+
+            resp = await self._client.responses.create(
+                model=self._model,
+                instructions=(
+                    "Tu es un assistant utile et concis. "
+                    "Améliore, reformule et clarifie la réponse suivante de manière "
+                    "naturelle et fiable en français. "
+                    "Si la réponse est limitée ou incomplète, dis-le clairement."
+                ),
+                input=raw,
+            )
+
+            return {
+                "answer": resp.output_text.strip(),
+                "sources": [],
+            }
+
+        # --- RAG pipeline ---
         route = self._route(message)
         sources = self._search(message, route)
         answer = await self._answer(message, sources, route)
@@ -49,7 +71,6 @@ class Agent:
         )
 
         text = resp.output_text.strip()
-
         return {"raw_result": text}
 
     async def draft_email_reply(self, *, email_text: str) -> str:
@@ -75,10 +96,38 @@ class Agent:
 
         return "Impossible de générer un brouillon pour le moment."
 
-    # -- routing -------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # Web search routing
+    # ----------------------------------------------------------------------
+
+    def _should_use_web_search(self, message: str) -> bool:
+        n = message.casefold()
+
+        web_keywords = (
+            "recherche web",
+            "cherche sur le web",
+            "cherche sur internet",
+            "sur internet",
+            "sur le web",
+            "web search",
+            "search the web",
+            "search online",
+            "internet",
+            "actualité",
+            "news",
+            "météo",
+            "weather",
+        )
+
+        return any(k in n for k in web_keywords)
+
+    # ----------------------------------------------------------------------
+    # Routing Gmail / general
+    # ----------------------------------------------------------------------
 
     def _route(self, message: str) -> dict[str, object]:
         n = f" {message.casefold()} "
+
         sent_kw = (
             " sent ",
             " envoye ",
@@ -95,6 +144,7 @@ class Agent:
             " ai-je repondu ",
             " ai je repondu ",
         )
+
         recv_kw = (
             " received ",
             " recu ",
@@ -109,29 +159,48 @@ class Agent:
             " qui m'a ecrit ",
             " qui m a ecrit ",
         )
+
         if any(k in n for k in sent_kw):
-            return {"label": "sent", "prefixes": ["from_gmail/sent/"], "strict": True}
+            return {
+                "label": "sent",
+                "prefixes": ["from_gmail/sent/"],
+                "strict": True,
+            }
+
         if any(k in n for k in recv_kw):
             return {
                 "label": "received",
                 "prefixes": ["from_gmail/received/"],
                 "strict": False,
             }
+
         return {"label": "all", "prefixes": None, "strict": False}
 
-    # -- search --------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # Search
+    # ----------------------------------------------------------------------
 
     def _search(self, message: str, route: dict[str, object]) -> list[DocumentMatch]:
         raw_prefixes = route.get("prefixes")
         prefixes = raw_prefixes if isinstance(raw_prefixes, list) else None
+
         if prefixes:
             scoped = self._kb.search(
-                query=message, limit=self._search_limit, prefixes=prefixes
+                query=message,
+                limit=self._search_limit,
+                prefixes=prefixes,
             )
+
             if route.get("strict") or len(scoped) >= min(2, self._search_limit):
                 return scoped
-            fallback = self._kb.search(query=message, limit=self._search_limit)
+
+            fallback = self._kb.search(
+                query=message,
+                limit=self._search_limit,
+            )
+
             return self._merge(scoped, fallback)
+
         return self._kb.search(query=message, limit=self._search_limit)
 
     def _merge(
@@ -139,22 +208,33 @@ class Agent:
     ) -> list[DocumentMatch]:
         merged: list[DocumentMatch] = []
         seen: set[tuple[str, int | None]] = set()
+
         for s in [*a, *b]:
             key = (s.relative_path, s.chunk_index)
+
             if key in seen:
                 continue
+
             seen.add(key)
             merged.append(s)
+
             if len(merged) >= self._search_limit:
                 break
+
         return merged
 
-    # -- LLM -----------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # LLM
+    # ----------------------------------------------------------------------
 
     async def _answer(
-        self, message: str, sources: list[DocumentMatch], route: dict[str, object]
+        self,
+        message: str,
+        sources: list[DocumentMatch],
+        route: dict[str, object],
     ) -> str:
         ctx = self._build_context(sources, route)
+
         resp = await self._client.responses.create(
             model=self._model,
             instructions=(
@@ -166,16 +246,21 @@ class Agent:
             ),
             input=f"Question utilisateur:\n{message}\n\nContexte RAG:\n{ctx}",
         )
+
         text = resp.output_text.strip()
+
         if text:
             return text
+
         return (
             "Je n'ai pas pu générer de réponse. "
             "Réessaie après avoir indexé plus de documents."
         )
 
     def _build_context(
-        self, sources: list[DocumentMatch], route: dict[str, object]
+        self,
+        sources: list[DocumentMatch],
+        route: dict[str, object],
     ) -> str:
         if not sources:
             return (
@@ -183,15 +268,24 @@ class Agent:
                 "Aucun document pertinent n'a encore été indexé. "
                 "Invite l'utilisateur à envoyer un audio ou lancer la sync Gmail."
             )
+
         parts = [f"Routage: {route['label']}"]
+
         for s in sources:
             chunk = self._kb.read_chunk(
                 relative_path=s.relative_path,
                 chunk_index=s.chunk_index,
             )
+
             snippet = (s.excerpt or chunk)[:1800].strip()
+
             parts.append(
-                f"Source: {s.relative_path}\nBoîte: {s.mailbox or 'all'}\n"
-                f"Chunk: {s.chunk_index}\nScore: {s.score:.3f}\nContenu:\n{snippet}"
+                f"Source: {s.relative_path}\n"
+                f"Boîte: {s.mailbox or 'all'}\n"
+                f"Chunk: {s.chunk_index}\n"
+                f"Score: {s.score:.3f}\n"
+                f"Contenu:\n{snippet}"
             )
+
         return "\n\n---\n\n".join(parts)
+    
