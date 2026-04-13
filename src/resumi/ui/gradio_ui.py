@@ -210,12 +210,16 @@ def create_gradio_blocks(
                             value=initial_msgs,
                         )
                     
-                    with gr.Column(scale=1): # Nouveau Widget Calendrier
-                        gr.Markdown("### 🗓️ Mon Agenda")
+                    with gr.Column(scale=1, variant="panel"): # 'variant="panel"' donne le fond gris/encadré
+                        # On utilise du HTML pour centrer le titre proprement
+                        gr.HTML("<h3 style='text-align: center; margin-bottom: 10px;'>🗓️ Mon Agenda</h3>")
+                        
                         calendar_table = gr.Dataframe(
                             headers=["Date", "Heure", "Événement"],
                             value=_build_calendar_table(),
                             interactive=False,
+                            # On peut ajouter ceci pour que le tableau s'adapte bien au gris
+                            type="pandas",
                         )
 
                 with gr.Row():
