@@ -5,12 +5,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# System deps required by pymupdf / faiss-cpu
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libmupdf-dev libfreetype6 libharfbuzz0b libjpeg62-turbo \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 
 RUN uv sync --no-dev --frozen || uv sync --no-dev
+
+# Prepare runtime directories
+RUN mkdir -p docs .data/faiss credentials
 
 EXPOSE 8000
 

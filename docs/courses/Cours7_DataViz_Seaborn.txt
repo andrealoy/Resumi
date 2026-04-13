@@ -1,623 +1,0 @@
-DATA MANAGEMENT,
-DATA VIZ & TEXT
-MINING
-
-Diplôme Sorbonne Data Analytics
-
-DATA VISUALISATION
-Avec Seaborn
-
-Seaborn
-•
-•
-•
-
-•
-
-Seaborn est une bibliothèque de tracés statistiques spécialement conçue pour bien
-interagir avec Pandas DataFrames afin de créer des types de tracés statistiques
-courants.
-Seaborn est construit directement à partir de Matplotlib mais utilise une syntaxe « sur
-une ligne » plus simple.
-Lorsque nous utilisons Seaborn, nous troquons la personnalisation contre la facilité
-d'utilisation.
-
-Cependant, comme il est construit directement à partir de Matplotlib, nous pouvons
-toujours effectuer des appels à la méthode plt pour affecter directement le tracé
-résultant.
-
-Seaborn
-•
-•
-
-Un tracé Seaborn typique utilise une ligne de code, par exemple :
-sns.scatterplot(x='salaire',y='ventes',data=df)
-Seaborn prend un DataFrame pandas, puis l'utilisateur fournit les noms de colonnes
-correspondants pour x et y (en fonction du type de tracé)
-
-Seaborn
-•
-•
-•
-
-Dans cette section, nous nous concentrons sur la compréhension des cas d'utilisation
-de chaque tracé et de leur syntaxe Seaborn.
-Documentation en ligne : https://seaborn.pydata.org/
-Question courante des étudiants :
-« Comment puis-je choisir quel graphique utiliser ? »
-
-Seaborn
-•
-
-Sujets des sections :
-
- Nuages ​de points
- Graphes de distribution
- Graphes catégoriels
- Graphiques de comparaison
- Grilles Seaborn
- Tracés matriciels
-
-Nuages ​de points
-
-Nuages ​de points
-•
-•
-
-Les nuages ​de points montrent la relation entre deux variables continues.
-Rappel :
-Les variables continues sont des variables numériques qui peuvent prendre n'importe
-quel nombre de valeurs entre deux valeurs quelconques.
-
-• Exemples de fonctionnalités continues
-• Âge
-• Hauteur
-• Salaire
-• Température
-• Des prix
-
-Nuages ​de points
-•
-•
-
-Une variable continue permet à une valeur de toujours être comprise entre deux
-valeurs.
-A ne pas confondre avec une variable catégorielle qui représente des catégories
-distinctes et uniques :
-
- Couleurs
- Formes
- Des noms
-
-Nuages ​de points
-•
-•
-
-Les nuages ​de points alignent un ensemble de deux variables continues et les tracent
-sous forme de coordonnées.
-Par exemple, imaginez des employés salariés qui vendent un certain montant d’articles
-chaque année. Nous pourrions explorer la relation entre les salaires des employés et
-le montant des ventes.
-
-Nuages ​de points
-● Tracer les points de coordonnées (x, y)
-
-Nuages ​de points
-● Tracer les points de coordonnées (salaire, ventes)
-
-Nuages ​de points
-● Seaborn peut ensuite ajouter de la coloration et du style
-● Encodage par couleur / Nuage de points à trois dimensions (2D + couleur)
-● Intérêt : Détecter si la troisième variable (l’expérience) influence la relation entre les
-deux premières.
-
-Nuages ​de points
-
-Notebook 1 :
-ScatterPlots
-
-Graphes de
-distribution
-
-Graphes de distribution
-•
-•
-•
-
-Les diagrammes de distribution affichent une seule entité continue et permettent de
-visualiser des propriétés telles que l'écart et les valeurs moyennes.
-Ils sont utiles pour visualiser la fréquence ou la densité des valeurs d'une variable,
-ainsi que pour identifier des tendances ou des modèles dans la distribution des
-données.
-Il existe 3 principaux types de graphes de distribution :
-
- Rug plot
- Histogramme
- KDE plot
-
-Graphes de distribution
-•
-•
-•
-•
-
-Explorons la distribution des salaires des employés.
-Une façon d’y parvenir consiste à créer un rug plot.
-Un rug plot est le tracé de distribution le plus simple car il ajoute simplement un tiret
-ou une ligne de graduation pour chaque valeur.
-L’axe des y n’a pas vraiment de signification.
-
-Graphes de distribution
-● Graphique des salaires :
-○ Ajoute une ligne pour chaque valeur de salaire
-
-Graphes de distribution
-● Graphique des salaires :
-○ Ajustez éventuellement la hauteur des lignes
-
-Graphes de distribution
-● Graphique des salaires :
-○ L'axe Y n'est pas interprétable
-
-Graphes de distribution
-● Graphique des salaires :
-○ Salaire le plus élevé, près de 160 000 $
-
-Graphes de distribution
-● Graphique des salaires :
-○ De nombreux salaires entre 60 000 $ et 120
-000 $
-
-Graphes de distribution
-● Graphique des salaires :
-○ De nombreuses lignes peuvent être
-superposées, on ne peut pas le savoir !
-
-Graphes de distribution
-● Graphique des salaires :
-○ Si nous comptons combien de lignes il y a par
-plage de X, nous pouvons créer un histogramme
-
-Graphes de distribution
-● Explorons un exemple simple
-
-Graphes de distribution
-● Nous plaçons les lignes du rug plot
-
-0
-
-dix
-
-20
-
-30
-
-Graphes de distribution
-● Choisissez un nombre de « groupes », nous en
-choisirons 3
-
-0
-
-dix
-
-20
-
-30
-
-Graphes de distribution
-● Compter les lignes par groupe
-
-1
-
-0
-
-3
-
-dix
-
-2
-
-20
-
-30
-
-Graphes de distribution
-● Créez une barre aussi haute que le nombre
-4
-3
-
-2
-
-1
-
-1
-
-3
-
-2
-
-0
-0
-
-dix
-
-20
-
-30
-
-Graphes de distribution
-● L'histogramme est terminé
-4
-3
-
-2
-
-1
-
-0
-
-0
-
-dix
-
-20
-
-30
-
-Graphes de distribution
-● L'axe Y peut également être normalisé en pourcentage
-
-0,5
-
-0,333
-
-0,166
-
-0
-
-0
-
-dix
-
-20
-
-30
-
-Graphes de distribution
-● La modification du nombre de groupes affiche plus de
-détails au lieu de tendances générales.
-
-Graphes de distribution
-● Seaborn nous permet également d'ajouter une courbe
-KDE (Kernel Density Estimate) par-dessus un
-histogramme.
-
-Graphes de distribution
-•
-•
-•
-
-KDE signifie « Estimation de la densité du noyau » .
-Une courbe lissée qui estime la densité de probabilité des données ( courbe qui montre où
-les valeurs sont fréquents et où elles sont rares)
-Version lissée et continue du comptage de l’histogramme.
-
-Notebook 2 : Graphes de
-distribution
-
-Graphes catégoriels
-Estimation statistique au sein des catégories
-
-Graphes catégoriels
-• Les graphiques catégoriels discutés ici afficheront une métrique statistique par catégorie.
-• Par exemple, la valeur moyenne par catégorie ou le nombre de lignes par catégorie.
-• C'est l'équivalent de visualisation d'un appel groupby().
-• Les deux principaux types de graphes pour cela sont :
-• countplot() : représenter graphiquement le nombre d'occurrences de chaque catégorie.
-• barplot() : visualiser les différences de magnitude entre les catégories ou groupes.
-
-Graphes catégoriels
-● Countplot pour les divisions d’une entreprise
-
-Graphes catégoriels
-● Countplot pour les niveaux d’éducation
-
-Graphes catégoriels
-● Countplot avec séparation de teinte (hue) supplémentaire
-
-Graphes catégoriels
-• Le barplot est la forme générale qui vous permet de choisir n'importe quelle mesure ou
-estimateur pour l'axe y.
-
-• Nous pourrions plutôt tracer la valeur moyenne et l’écart type par catégorie.
-• Note importante :
-Soyez très prudent avec ces tracés, puisque la barre est remplie et continue, un utilisateur
-peut interpréter la continuité le long de l'axe y, ce qui peut être incorrect !
-Assurez-vous toujours d’ajouter des étiquetages et des explications supplémentaires pour
-ces graphes !
-
-Graphes catégoriels
-● Barplot affichant les moyennes des salaires par
-niveau d'éducation
-
-Pie Chart
-● Un pie chart est généralement utilisé pour représenter la répartition des valeurs d'une
-variable catégorielle sous forme de parts d'un tout. Il est utile pour visualiser la
-contribution de chaque catégorie à l'ensemble des données et pour comparer les
-proportions des différentes catégories.
-
-WordCloud
-● Le nuage de mots (ou "word cloud" en anglais) est une représentation visuelle de données
-textuelles où les mots sont affichés en taille proportionnelle à leur fréquence d'apparition
-dans le texte. C'est une manière efficace de résumer et de visualiser les informations
-textuelles de manière concise et intuitive
-
-Notebook 3 : Graphes
-catégoriels – Estimation
-Statistique
-
-Graphes catégoriels
-Distribution au sein des catégories
-
-Graphes catégoriels
-• Nous avons exploré les diagrammes de distribution pour une seule fonctionnalité, mais que se
-passe-t-il si nous voulons comparer les distributions entre catégories ?
-
-• Par exemple, au lieu de la répartition des salaires de chacun, on peut comparer les répartitions
-des salaires par niveau.
-
-• Nous allons d’abord séparer chaque catégorie, puis créer la visualisation de distribution.
-• Plots possibles pour la répartition au sein des catégories :
-• Boxplot : Boîte à moustaches
-• Violinplot
-• Swarmplot
-• Boxenplot (tracé lettre-valeur)
-
-Graphes catégoriels
-• Le Boxplot affiche la distribution d'une variable continue.
-• Pour ce faire, il utilise des quartiles.
-• Les quartiles séparent les données en 4 nombres égaux de points de données :
-25 % des points de données se situent dans le quartile inférieur.
-Le 50e percentile (Q2) est la médiane.
-
-Graphes catégoriels
-● Boîte à moustaches sur une seule entité :
-
-Graphes catégoriels
-● La médiane est le 50e percentile
-Médiane (Q2)
-
-Graphes catégoriels
-● La médiane divise les données en deux
-● 50 % des valeurs sont inférieures ou égales, et 50 %
-sont supérieures ou égales.
-Médiane (Q2)
-
-Graphes catégoriels
-● IQR définit la largeur de la boîte
-IQR - Plage interquartile
-
-Q1
-
-Q3
-
-Graphes catégoriels
-● 50 % de tous les points de données se trouvent à
-l’intérieur de la boîte IQR - Plage interquartile
-
-Q1
-
-Q3
-
-Graphes catégoriels
-● Q1 est le 25e percentile
-IQR - Plage interquartile
-
-Q1
-
-Q3
-
-Graphes catégoriels
-● 25 % des points de données sont inférieurs à Q1
-IQR - Plage interquartile
-
-Q1
-
-Q3
-
-Graphes catégoriels
-● Q3 est le 75e percentile
-IQR - Plage interquartile
-
-Q1
-
-Q3
-
-Graphes catégoriels
-● 25 % de tous les points sont au-dessus de Q3
-● la valeur en dessous de laquelle se trouve 75 % des
-données.
-IQR - Plage interquartile
-
-Q1
-
-Q3
-
-Graphes catégoriels
-● Les « moustaches » sont définies par 1,5 × IQR
-IQR - Plage interquartile
-1,5 × IQR
-
-Q1
-
-1,5 × IQR
-
-Q3
-
-Graphes catégoriels
-● En dehors des moustaches se trouvent des valeurs
-IQR - Plage interquartile
-aberrantes
-1,5 × IQR
-
-Q1
-
-1,5 × IQR
-
-Q3
-
-Outliers
-
-Graphes catégoriels
-● Boxplot donne rapidement des informations sur la
-distribution statistique dans un format visuel
-
-Graphes catégoriels
-● Le boxplot peut être orienté
-verticalement ou horizontalement.
-● La longueur des moustaches montre
-l’étendue des données "normales"
-(pas d’outliers).
-● Les points au-delà des moustaches
-sont considérés comme des outliers
-(données aberrantes).
-
-Graphes catégoriels
-● Nous pouvons créer une boîte à moustaches par
-catégorie
-
-Graphes catégoriels
-● Nous pouvons créer une boîte à moustaches par
-catégorie
-
-ViolinPlot
-
-• ViolinPlot joue un rôle similaire à celui de la boîte à moustaches.
-• Il affiche la densité de probabilité sur les données à l'aide d'un KDE.
-• Nous pouvons l'imaginer comme un graphe KDE en miroir.
-Rappel : KDE = Kernel Density Estimate (Estimation de la densité par noyau)
-- le KDE est une méthode pour estimer la distribution de probabilité d’un ensemble de
-données de façon lisse.
-- Plutôt que d’avoir un simple histogramme en barres, le KDE crée une courbe lisse qui
-"approxime" la forme générale des données.
-
-violinPlot
-● Nous pourrions alors le « refléter » :
-
-violinPlot
-● Combinez-le ensuite pour obtenir le graphe en violon :
-
-violinPlot
-● Combinez-le ensuite pour obtenir le graphe en violon :
-
-violinPlot
-● Les graphes en violon peuvent ensuite être créées
-par catégorie.
-● Ça donne une idée plus fine de la distribution, pas
-seulement des quantiles comme dans un boxplot.
-
-Notebook 4 : Graphes
-catégoriels – Distribution au
-sein des catégories
-
-Graphiques de comparaison
-
-Graphiques de comparaison
-● Les tracés de comparaison sont essentiellement des versions bidimensionnelles des
-tracés que nous avons découverts jusqu'à présent.
-● Le type principal de graphes abordé ici :
-○ Pairplot()
-
-Graphiques de comparaison
-● Pairplot()
-Le pairplot() est un moyen rapide de comparer toutes les colonnes numériques
-d'un DataFrame.
-
-Il crée automatiquement un histogramme pour chaque colonne et une
-comparaison de nuages ​de points entre toutes les combinaisons possibles de
-colonnes.
-
-Graphiques de comparaison
-● Pairplot()
-Avertissement!
-
- pairplot() peut être gourmand en CPU et en RAM pour les grands DataFrames
-avec de nombreuses colonnes.
-
- C'est une bonne idée de commencer par filtrer uniquement les colonnes qui vous
-intéressent.
-
-Graphiques de comparaison
-● Pairplot()
-
-Graphiques de comparaison
-● Pairplot()
-
-Graphiques de comparaison
-● Pairplot()
-
-Graphiques de comparaison
-● Pairplot()
-
-Notebook 5 : Graphiques de
-comparaison
-
-Grilles Seaborn
-
-Grilles Seaborn
-● Les appels de grille Seaborn utilisent Matplotlib subplots() pour créer automatiquement
-une grille basée sur une colonne catégorielle.
-
-● Au lieu de transmettre un nombre spécifique de colonnes ou de lignes pour les sousgraphes, nous pouvons simplement transmettre le nom de la colonne et Seaborn mappera
-
-automatiquement la grille des sous-graphes.
-
-● De nombreux appels de graphes intégrés à Seaborn fonctionnent sur ce système de grille.
-● L'appel direct du système de grille permet aux utilisateurs de personnaliser fortement les
-tracés.
-
-Grilles Seaborn
-● Création de sous-graphes basés sur des grilles :
-
-Grilles Seaborn
-● Cartographier des tracés basés sur la grille
-pairplot() :
-
-Notebook 6 : Grilles Seaborn
-
-Tracés matriciels
-
-Tracés matriciels
-● Les tracés matriciels sont l’équivalent visuel de l’affichage d’un tableau croisé
-dynamique.
-● Le tracé matriciel affiche toutes les données transmises, visualisant toutes les valeurs
-numériques dans un DataFrame.
-● Note!
-○ Tous les DataFrame ne constituent pas un choix valable pour un tracé
-matriciel tel qu'une carte thermique.
-
-Tracés matriciels
-● Le type principal de tracés matriciels :
-HeatMap() : Affiche visuellement la distribution des valeurs de cellule avec un
-mappage de couleurs.
-
-Exemple:
-
-Tracés matriciels
-● Carte de chaleur
-
-Tracés matriciels
-● Notez qu'une HeatMap devrait idéalement avoir toutes les cellules dans les mêmes
-unités, de sorte que le mappage des couleurs a du sens sur l'ensemble du DataFrame.
-● Dans ce cas particulier, toutes les valeurs étaient des « taux » de croissance ou de
-changement en pourcentage dans carte de chaleur.
-
-Tracés matriciels
-● Si nous incluons l’âge :
-
-Notebook 7 : HeatMaps
-
-Notebook 8 : Exercices
-Seaborn
-
-

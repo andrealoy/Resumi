@@ -12,6 +12,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-untyped]
 from googleapiclient.discovery import Resource, build  # type: ignore[import-untyped]
 
+from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import FaissKnowledgeBase
 
 GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -30,6 +31,7 @@ class GmailHandler:
         token_file: str,
         docs_root: str,
         knowledge_base: FaissKnowledgeBase,
+        store: DocumentStore | None = None,
         query: str = "in:anywhere",
         user_id: str = "me",
     ) -> None:
@@ -37,29 +39,114 @@ class GmailHandler:
         self._token = Path(token_file)
         self._docs = Path(docs_root)
         self._kb = knowledge_base
+        self._store = store
         self._query = query
         self._user_id = user_id
 
     # -- public API ----------------------------------------------------------
 
+    def is_connected(self) -> bool:
+        """Return *True* if a valid (or refreshable) Gmail token exists."""
+        if not self._token.exists():
+            return False
+        try:
+            creds = Credentials.from_authorized_user_file(
+                str(self._token), GMAIL_SCOPES
+            )  # type: ignore[no-untyped-call]
+            if creds and creds.valid:
+                return True
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                self._save_creds(creds)
+                return True
+        except Exception:
+            return False
+        return False
+
+    def connect(self) -> bool:
+        """Run the OAuth flow and return *True* on success."""
+        try:
+            self._credentials()
+            return True
+        except Exception:
+            return False
+
+    def last_sync_date(self) -> datetime | None:
+        """Return the most recent sync timestamp found in saved mails, or *None*."""
+        gmail_dir = self._docs / "from_gmail"
+        if not gmail_dir.exists():
+            return None
+        latest: datetime | None = None
+        for md in gmail_dir.rglob("*.md"):
+            # filenames start with YYYYMMDDTHHMMSSz_
+            m = re.match(r"(\d{8}T\d{6}Z)", md.name)
+            if m:
+                try:
+                    dt = datetime.strptime(m.group(1), "%Y%m%dT%H%M%SZ").replace(
+                        tzinfo=UTC
+                    )
+                    if latest is None or dt > latest:
+                        latest = dt
+                except ValueError:
+                    continue
+        return latest
+
+    def sync_age_hours(self) -> float | None:
+        """Hours since the last sync, or *None* if never synced."""
+        last = self.last_sync_date()
+        if last is None:
+            return None
+        return (datetime.now(UTC) - last).total_seconds() / 3600
+
+    async def fetch_received(self, *, max_results: int = 100) -> list[dict[str, str]]:
+        """Fetch received messages only."""
+        return await self._fetch(max_results=max_results, direction=Direction.RECEIVED)
+
+    async def fetch_sent(self, *, max_results: int = 100) -> list[dict[str, str]]:
+        """Fetch sent messages only."""
+        return await self._fetch(max_results=max_results, direction=Direction.SENT)
+
+    def save_messages(self, messages: list[dict[str, str]], subdir: str) -> list[str]:
+        """Save messages to disk (dedup via store) and return relative paths."""
+        saved: list[str] = []
+        for msg in messages:
+            body = " ".join(msg["body"].split()).strip()
+            content_hash = DocumentStore.hash_content(body)
+            if self._store and self._store.exists(content_hash=content_hash):
+                continue
+            rel = self._save(msg, subdir)
+            saved.append(rel)
+            if self._store:
+                self._store.add(
+                    doc_type="mail",
+                    source="gmail",
+                    direction=subdir,
+                    title=msg["subject"],
+                    sender=msg.get("from"),
+                    recipient=msg.get("to"),
+                    file_path=rel,
+                    content_hash=content_hash,
+                )
+        return saved
+
+    def reindex(self) -> int:
+        """Rebuild the FAISS index and return the number of indexed documents."""
+        return self._kb.rebuild()
+
     async def sync(
         self,
         *,
-        received_max: int = 500,
-        sent_max: int = 500,
+        received_max: int = 100,
+        sent_max: int = 100,
     ) -> dict[str, object]:
-        received = await self._fetch(
-            max_results=received_max, direction=Direction.RECEIVED
-        )
-        sent = await self._fetch(max_results=sent_max, direction=Direction.SENT)
+        received = await self.fetch_received(max_results=received_max)
+        sent = await self.fetch_sent(max_results=sent_max)
 
         saved: list[str] = []
-        for msg in received:
-            saved.append(self._save(msg, "received"))
-        for msg in sent:
-            saved.append(self._save(msg, "sent"))
+        saved.extend(self.save_messages(received, "received"))
+        saved.extend(self.save_messages(sent, "sent"))
 
-        indexed = self._kb.rebuild()
+        indexed = self.reindex()
         return {
             "synced": len(saved),
             "received": len(received),
@@ -225,6 +312,9 @@ class GmailHandler:
         return str(path.relative_to(self._docs))
 
 
-def _slugify(value: str) -> str:
+def _slugify(value: str, max_length: int = 80) -> str:
     normalized = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower())
-    return normalized.strip("-") or "document"
+    slug = normalized.strip("-") or "document"
+    if len(slug) > max_length:
+        slug = slug[:max_length].rstrip("-")
+    return slug

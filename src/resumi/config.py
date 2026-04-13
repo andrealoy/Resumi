@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     )
 
     docs_root: str = Field(default="docs", alias="DOCS_ROOT")
+    db_path: str = Field(default=".data/documents.db", alias="DB_PATH")
     faiss_index_dir: str = Field(default=".data/faiss", alias="FAISS_INDEX_DIR")
     rag_chunk_size: int = Field(default=160, alias="RAG_CHUNK_SIZE")
     rag_chunk_overlap: int = Field(default=40, alias="RAG_CHUNK_OVERLAP")
@@ -39,7 +40,7 @@ class Settings(BaseSettings):
     )
     gmail_query: str = Field(default="in:anywhere", alias="GMAIL_QUERY")
     gmail_user_id: str = Field(default="me", alias="GMAIL_USER_ID")
-    gmail_max_results: int = Field(default=1000, alias="GMAIL_MAX_RESULTS")
+    gmail_max_results: int = Field(default=100, alias="GMAIL_MAX_RESULTS")
 
     google_calendar_id: str = Field(default="primary", alias="GOOGLE_CALENDAR_ID")
     google_service_account_file: str = Field(
