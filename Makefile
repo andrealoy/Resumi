@@ -20,6 +20,7 @@ run:
 clean:
 	@echo "🧹 Clearing all caches and data..."
 	rm -f credentials/gmail-token.json
+	rm -f local_calendar.csv
 	rm -rf .data/
 	rm -rf docs/
 	find src -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
