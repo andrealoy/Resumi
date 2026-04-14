@@ -1,4 +1,4 @@
-.PHONY: install lint test agent-test run clean
+.PHONY: install lint test agent-test run clean reset-venv
 
 install:
 	uv sync --all-groups
@@ -26,3 +26,9 @@ clean:
 	find src -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	rm -rf .pytest_cache .ruff_cache .mypy_cache
 	@echo "✅ Done. Gmail token, FAISS index, SQLite DB, documents and Python caches removed."
+
+reset-venv:
+	@echo "🔄 Rebuilding .venv..."
+	rm -rf .venv
+	uv sync --all-groups
+	@echo "✅ .venv rebuilt."

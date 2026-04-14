@@ -16,3 +16,4 @@ docs/from_gmail/
 *.egg-info
 dist
 build
+repo.txt
