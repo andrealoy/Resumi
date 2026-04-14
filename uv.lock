@@ -354,6 +354,21 @@ wheels = [
 ]
 
 [[package]]
+name = "dateparser"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "pytz" },
+    { name = "regex" },
+    { name = "tzlocal" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/2d/a0ccdb78788064fa0dc901b8524e50615c42be1d78b78d646d0b28d09180/dateparser-1.4.0.tar.gz", hash = "sha256:97a21840d5ecdf7630c584f673338a5afac5dfe84f647baf4d7e8df98f9354a4", size = 321512, upload-time = "2026-03-26T09:56:10.292Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b4/0b/3c3bb7cbe757279e693a0be6049048012f794d01f81099609ecd53b899f0/dateparser-1.4.0-py3-none-any.whl", hash = "sha256:7902b8e85d603494bf70a5a0b1decdddb2270b9c6e6b2bc8a57b93476c0df378", size = 300379, upload-time = "2026-03-26T09:56:08.409Z" },
+]
+
+[[package]]
 name = "distro"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1906,6 +1921,7 @@ name = "resumi"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "dateparser" },
     { name = "faiss-cpu" },
     { name = "fastapi" },
     { name = "google-api-python-client" },
@@ -1916,6 +1932,7 @@ dependencies = [
     { name = "langchain" },
     { name = "langchain-openai" },
     { name = "openai" },
+    { name = "pandas" },
     { name = "pydantic-settings" },
     { name = "pymupdf" },
     { name = "python-multipart" },
@@ -1935,6 +1952,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "dateparser", specifier = ">=1.1.0,<2.0.0" },
     { name = "faiss-cpu", specifier = ">=1.11.0,<2.0.0" },
     { name = "fastapi", specifier = ">=0.115.0,<1.0.0" },
     { name = "google-api-python-client", specifier = ">=2.164.0,<3.0.0" },
@@ -1945,6 +1963,7 @@ requires-dist = [
     { name = "langchain", specifier = ">=1.2.15" },
     { name = "langchain-openai", specifier = ">=1.1.9" },
     { name = "openai", specifier = ">=1.66.0,<2.0.0" },
+    { name = "pandas", specifier = ">=1.5.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.8.0,<3.0.0" },
     { name = "pymupdf", specifier = ">=1.27.2.2" },
     { name = "python-multipart", specifier = ">=0.0.9,<1.0.0" },
@@ -2258,6 +2277,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/19/f5/cd531b2d15a671a40c0f66cf06bc3570a12cd56eef98960068ebbad1bf5a/tzdata-2026.1.tar.gz", hash = "sha256:67658a1903c75917309e753fdc349ac0efd8c27db7a0cb406a25be4840f87f98", size = 197639, upload-time = "2026-04-03T11:25:22.002Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/70/d460bd685a170790ec89317e9bd33047988e4bce507b831f5db771e142de/tzdata-2026.1-py2.py3-none-any.whl", hash = "sha256:4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9", size = 348952, upload-time = "2026-04-03T11:25:20.313Z" },
+]
+
+[[package]]
+name = "tzlocal"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
 ]
 
 [[package]]

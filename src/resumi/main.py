@@ -133,7 +133,28 @@ class GmailSyncRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def _print_banner() -> None:
+    """Print a coloured ASCII banner on startup."""
+    purple = "\033[38;5;135m"
+    magenta = "\033[38;5;177m"
+    white = "\033[1;97m"
+    dim = "\033[2m"
+    reset = "\033[0m"
+    lines = [
+        f"{purple} ____                            _ {reset}",
+        f"{purple}|  _ \\ ___  ___ _   _ _ __ ___ (_){reset}",
+        f"{magenta}| |_) / _ \\/ __| | | | '_ ` _ \\| |{reset}",
+        f"{magenta}|  _ <  __/\\__ \\ |_| | | | | | | |{reset}",
+        f"{white}|_| \\_\\___||___/\\__,_|_| |_| |_|_|{reset}",
+        "",
+        f"  {dim}Personal assistant · RAG · Gmail · Calendar{reset}",
+        "",
+    ]
+    print("\n".join(lines))
+
+
 def create_app() -> FastAPI:
+    _print_banner()
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
 

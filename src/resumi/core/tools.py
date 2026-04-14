@@ -6,6 +6,7 @@ import ast
 import operator as op
 from typing import Callable
 
+from resumi.core.calendar import calendar_tool, CALENDAR_FILE
 from resumi.core.web_search import web_search
 
 
