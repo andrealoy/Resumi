@@ -1,25 +1,9 @@
 import os
 import csv
-from datetime import datetime
-import sys
-import types
-
-# During tests we may not have the `langchain_core` package available.
-# The `resumi.core.tools` module imports `from langchain_core.tools import tool`
-# at import time; create a minimal fake module so the import succeeds.
-if "langchain_core.tools" not in sys.modules:
-    _pkg = types.ModuleType("langchain_core")
-    _tools = types.ModuleType("langchain_core.tools")
-    def tool(fn):
-        return fn
-    _tools.tool = tool
-    _pkg.tools = _tools
-    sys.modules["langchain_core"] = _pkg
-    sys.modules["langchain_core.tools"] = _tools
 
 import pytest
 
-from resumi.core.tools import calendar_tool, CALENDAR_FILE
+from resumi.core.calendar import calendar_tool, CALENDAR_FILE
 
 
 def test_calendar_tool_creates_csv_and_writes_row(tmp_path, monkeypatch):
