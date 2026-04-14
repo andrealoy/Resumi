@@ -22,6 +22,10 @@ RUN uv sync --no-dev --frozen || uv sync --no-dev
 # Prepare runtime directories
 RUN mkdir -p docs .data/faiss credentials
 
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8000
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["uv", "run", "uvicorn", "resumi.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"]
