@@ -197,6 +197,43 @@ class Agent:
         frozenset({"affiche", "mails"}),
     )
 
+    # Keywords that suggest a calendar / event tool call.
+    _CALENDAR_KW = (
+        "ajoute un événement",
+        "ajoute un evenement",
+        "ajouter un événement",
+        "ajouter un evenement",
+        "ajoute un rdv",
+        "ajouter un rdv",
+        "ajoute un rendez-vous",
+        "ajouter un rendez-vous",
+        "ajoute un rendez vous",
+        "ajouter un rendez vous",
+        "note dans le calendrier",
+        "noter dans le calendrier",
+        "mets dans le calendrier",
+        "mettre dans le calendrier",
+        "ajoute au calendrier",
+        "ajouter au calendrier",
+        "planifie",
+        "planifier",
+        "programme un",
+        "programmer un",
+        "crée un événement",
+        "cree un evenement",
+        "créer un événement",
+        "creer un evenement",
+        "add event",
+        "add to calendar",
+        "schedule",
+        frozenset({"ajoute", "événement"}),
+        frozenset({"ajoute", "evenement"}),
+        frozenset({"ajoute", "rdv"}),
+        frozenset({"ajoute", "calendrier"}),
+        frozenset({"ajouter", "calendrier"}),
+        frozenset({"mets", "calendrier"}),
+    )
+
     @staticmethod
     def _match(keywords: tuple[str | frozenset[str], ...], text: str) -> bool:
         """Check if any keyword matches: substring for str, all-words for frozenset."""
@@ -235,6 +272,8 @@ class Agent:
             return "list_mails"
         if self._match(self._GMAIL_SYNC_KW, low):
             return "gmail_sync"
+        if self._match(self._CALENDAR_KW, low):
+            return "calendar"
         return None
 
     async def chat(
@@ -266,11 +305,21 @@ class Agent:
         if tool in app_tools:
             return await self._handle_app_action(tool)
 
-        # --- Calculator / Web search: route to LangChain agent ---
-        if tool in ("calc", "web"):
+        # --- Calculator / Web search / Calendar: route to LangChain agent ---
+        if tool in ("calc", "web", "calendar"):
             try:
+                # Build message list with history for context (calendar
+                # requests often reference previous messages).
+                messages = []
+                if history and tool == "calendar":
+                    for h in history[-6:]:
+                        messages.append(
+                            {"role": h["role"], "content": h["content"]}
+                        )
+                messages.append({"role": "user", "content": message})
+
                 result = self._lc_agent.invoke(
-                    {"messages": [{"role": "user", "content": message}]}
+                    {"messages": messages}
                 )
                 final_message = result["messages"][-1].content
                 logger.info(

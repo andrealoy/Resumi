@@ -3,12 +3,17 @@
 import os
 import tempfile
 from collections.abc import Generator
+from datetime import date, timedelta
 from typing import cast
 
+import calendar as pycalendar
+
 import gradio as gr
+import pandas as pd
 
 from resumi.core.agent import Agent
 from resumi.core.audio_handler import start_recording, stop_recording, transcribe_file
+from resumi.core.calendar import CALENDAR_FILE
 from resumi.core.document_loader import DocumentLoader
 from resumi.core.document_store import DocumentStore
 from resumi.core.gmail_handler import GmailHandler
@@ -205,6 +210,98 @@ def _build_doc_table(store: DocumentStore) -> list[list[str]]:
             date = str(d.get("date", ""))[:10]
             rows.append([title, category, date])
     return rows
+
+
+def _build_calendar_table() -> list[list[str]]:
+    """Read the local calendar CSV for Gradio display."""
+    if os.path.exists(CALENDAR_FILE):
+        try:
+            df = pd.read_csv(CALENDAR_FILE)
+            return df.values.tolist()
+        except Exception:
+            return []
+    return []
+
+
+def _build_calendar_html(year: int | None = None, month: int | None = None) -> str:
+    """Render an HTML monthly calendar with events from the CSV."""
+    today = date.today()
+    if year is None:
+        year = today.year
+    if month is None:
+        month = today.month
+
+    # Load events
+    events: dict[str, list[tuple[str, str]]] = {}  # "YYYY-MM-DD" -> [(heure, label)]
+    if os.path.exists(CALENDAR_FILE):
+        try:
+            df = pd.read_csv(CALENDAR_FILE)
+            for _, row in df.iterrows():
+                d = str(row.get("Date", ""))
+                h = str(row.get("Heure", ""))
+                ev = str(row.get("Événement", row.get("Evenement", "")))
+                events.setdefault(d, []).append((h, ev))
+        except Exception:
+            pass
+
+    # Month navigation
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+
+    month_names_fr = [
+        "", "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+    ]
+    day_names = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+
+    # Calendar grid
+    cal = pycalendar.Calendar(firstweekday=0)
+    weeks = cal.monthdayscalendar(year, month)
+
+    html = f"""
+    <div class="cal-container">
+      <div class="cal-header">
+        <span class="cal-title">{month_names_fr[month].capitalize()} {year}</span>
+      </div>
+      <table class="cal-grid">
+        <thead><tr>
+    """
+    for d in day_names:
+        html += f'<th class="cal-dayname">{d}</th>'
+    html += "</tr></thead><tbody>"
+
+    for week in weeks:
+        html += "<tr>"
+        for day in week:
+            if day == 0:
+                html += '<td class="cal-cell cal-empty"></td>'
+                continue
+
+            day_str = f"{year}-{month:02d}-{day:02d}"
+            is_today = (year == today.year and month == today.month and day == today.day)
+            day_events = events.get(day_str, [])
+
+            cls = "cal-cell"
+            if is_today:
+                cls += " cal-today"
+            if day_events:
+                cls += " cal-has-event"
+
+            html += f'<td class="{cls}"><div class="cal-day-num">{day}</div>'
+            for h, ev in day_events[:3]:  # max 3 per cell
+                html += (
+                    f'<div class="cal-event" title="{h} — {ev}">'
+                    f'<span class="cal-event-time">{h}</span> {ev}</div>'
+                )
+            if len(day_events) > 3:
+                html += f'<div class="cal-event cal-more">+{len(day_events) - 3} autres</div>'
+            html += "</td>"
+        html += "</tr>"
+
+    html += "</tbody></table></div>"
+    return html
 
 
 # --- Thème de l'interface
@@ -444,6 +541,102 @@ textarea, input[type="text"] {
     min-width: 80px !important;
     height: 42px !important;
 }
+
+/* ── Calendar visual ── */
+.cal-container {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 12px 0 8px;
+}
+.cal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #e4e4ed;
+    letter-spacing: -0.01em;
+}
+.cal-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+    table-layout: fixed;
+}
+.cal-dayname {
+    color: #8888a0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 6px 0;
+}
+.cal-cell {
+    background: #1c1c27;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    vertical-align: top;
+    padding: 6px 8px;
+    min-height: 80px;
+    height: 80px;
+    transition: border-color 0.15s ease;
+}
+.cal-cell:hover {
+    border-color: #3b3b50;
+}
+.cal-empty {
+    background: transparent;
+    border-color: transparent;
+}
+.cal-today {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.25);
+}
+.cal-has-event {
+    background: #1e1c2a;
+}
+.cal-day-num {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #a1a1b5;
+    margin-bottom: 4px;
+}
+.cal-today .cal-day-num {
+    color: #c084fc;
+    font-weight: 700;
+}
+.cal-event {
+    font-size: 0.7rem;
+    line-height: 1.3;
+    color: #e4e4ed;
+    background: rgba(124, 58, 237, 0.18);
+    border-left: 2px solid #7c3aed;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.cal-event-time {
+    color: #c084fc;
+    font-weight: 600;
+    margin-right: 3px;
+}
+.cal-more {
+    color: #8888a0;
+    background: transparent;
+    border-left-color: #3b3b50;
+    font-style: italic;
+}
+.cal-nav-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 8px;
+}
 """
 
 
@@ -542,6 +735,14 @@ def create_gradio_blocks(
                 # --- others
                 with gr.Accordion("Sources consultées", open=False):
                     sources = gr.JSON(label="Sources RAG", show_label=False)
+
+                with gr.Accordion("🗓️ Calendrier", open=False):
+                    calendar_table = gr.Dataframe(
+                        headers=["Date", "Heure", "Événement"],
+                        value=_build_calendar_table(),
+                        interactive=False,
+                        wrap=True,
+                    )
 
                 is_rec = gr.State(False)
                 pending_sync = gr.State(False)
@@ -646,6 +847,7 @@ def create_gradio_blocks(
                         str,
                         list[dict[str, object]],
                         bool,
+                        list[list[str]],
                     ],
                     None,
                     None,
@@ -663,7 +865,7 @@ def create_gradio_blocks(
                                 history,
                                 max_results=count,
                             ):
-                                yield h, "", [], False
+                                yield h, "", [], False, _build_calendar_table()
                             return
                         # Not a valid count — reset and handle normally
 
@@ -681,7 +883,7 @@ def create_gradio_blocks(
                                     ),
                                 },
                             ]
-                            yield updated, "", [], False
+                            yield updated, "", [], False, _build_calendar_table()
                             return
                         # Ask how many mails
                         updated = history + [
@@ -697,7 +899,7 @@ def create_gradio_blocks(
                                 ),
                             },
                         ]
-                        yield updated, "", [], True
+                        yield updated, "", [], True, _build_calendar_table()
                         return
 
                     # -- Detect sync request from chat -----------
@@ -715,7 +917,7 @@ def create_gradio_blocks(
                                     ),
                                 },
                             ]
-                            yield updated, "", [], False
+                            yield updated, "", [], False, _build_calendar_table()
                             return
 
                         # If the user specified a count inline
@@ -730,7 +932,7 @@ def create_gradio_blocks(
                                 history,
                                 max_results=count,
                             ):
-                                yield h, "", [], False
+                                yield h, "", [], False, _build_calendar_table()
                             return
 
                         # Ask how many mails
@@ -747,7 +949,7 @@ def create_gradio_blocks(
                                 ),
                             },
                         ]
-                        yield updated, "", [], True
+                        yield updated, "", [], True, _build_calendar_table()
                         return
 
                     # -- Normal message --------------------------
@@ -764,12 +966,13 @@ def create_gradio_blocks(
                         "",
                         result.get("sources", []),  # type: ignore[arg-type]
                         False,
+                        _build_calendar_table(),
                     )
 
                 # --- functions mic
                 def agent_voice_respond(transcript: str, history: list[dict[str, str]]):
                     if not transcript or transcript.startswith("("):
-                        return history, []
+                        return history, [], _build_calendar_table()
 
                     result = ask(
                         agent, transcript, history[:-2]
@@ -778,7 +981,7 @@ def create_gradio_blocks(
                     new_history = history[:-1] + [
                         {"role": "assistant", "content": str(result["answer"])}
                     ]
-                    return new_history, result.get("sources", [])
+                    return new_history, result.get("sources", []), _build_calendar_table()
 
                 # Un état caché pour stocker le texte transcrit entre les deux étapes
                 temp_transcript = gr.State("")
@@ -786,12 +989,12 @@ def create_gradio_blocks(
                 chat_event = message.submit(
                     respond,
                     inputs=[message, chatbot, pending_sync],
-                    outputs=[chatbot, message, sources, pending_sync],
+                    outputs=[chatbot, message, sources, pending_sync, calendar_table],
                 )
                 btn_send.click(
                     respond,
                     inputs=[message, chatbot, pending_sync],
-                    outputs=[chatbot, message, sources, pending_sync],
+                    outputs=[chatbot, message, sources, pending_sync, calendar_table],
                 )
 
                 def handle_mic(recording: bool, history: list[dict[str, str]]):
@@ -857,7 +1060,7 @@ def create_gradio_blocks(
                 ).then(
                     fn=agent_voice_respond,
                     inputs=[temp_transcript, chatbot],
-                    outputs=[chatbot, sources],
+                    outputs=[chatbot, sources, calendar_table],
                 )
 
                 btn_stop.click(
@@ -1064,6 +1267,75 @@ def create_gradio_blocks(
                 refresh_btn.click(
                     fn=refresh_tables,
                     outputs=[received_table, sent_table],
+                )
+
+            # ── Tab 4: Calendrier (vue visuelle) ───────────────────────
+            with gr.Tab("Calendrier"):
+                today = date.today()
+                cal_year = gr.State(today.year)
+                cal_month = gr.State(today.month)
+
+                with gr.Row():
+                    gr.Markdown("## 🗓️ Mon Agenda")
+                    refresh_cal_btn = gr.Button(
+                        "Rafraîchir", variant="secondary", scale=0, min_width=150
+                    )
+
+                cal_html = gr.HTML(
+                    value=_build_calendar_html(),
+                    label="",
+                )
+
+                with gr.Row(elem_classes=["cal-nav-row"]):
+                    btn_prev = gr.Button("◀ Mois précédent", variant="secondary", scale=0, min_width=160)
+                    btn_today = gr.Button("Aujourd'hui", variant="primary", scale=0, min_width=120)
+                    btn_next = gr.Button("Mois suivant ▶", variant="secondary", scale=0, min_width=160)
+
+                with gr.Accordion("Liste des événements", open=False):
+                    cal_table = gr.Dataframe(
+                        headers=["Date", "Heure", "Événement"],
+                        value=_build_calendar_table(),
+                        interactive=False,
+                        wrap=True,
+                    )
+
+                def go_prev(y: int, m: int) -> tuple[str, list[list[str]], int, int]:
+                    m -= 1
+                    if m < 1:
+                        m, y = 12, y - 1
+                    return _build_calendar_html(y, m), _build_calendar_table(), y, m
+
+                def go_next(y: int, m: int) -> tuple[str, list[list[str]], int, int]:
+                    m += 1
+                    if m > 12:
+                        m, y = 1, y + 1
+                    return _build_calendar_html(y, m), _build_calendar_table(), y, m
+
+                def go_today() -> tuple[str, list[list[str]], int, int]:
+                    t = date.today()
+                    return _build_calendar_html(t.year, t.month), _build_calendar_table(), t.year, t.month
+
+                def refresh_cal(y: int, m: int) -> tuple[str, list[list[str]]]:
+                    return _build_calendar_html(y, m), _build_calendar_table()
+
+                btn_prev.click(
+                    fn=go_prev,
+                    inputs=[cal_year, cal_month],
+                    outputs=[cal_html, cal_table, cal_year, cal_month],
+                )
+                btn_next.click(
+                    fn=go_next,
+                    inputs=[cal_year, cal_month],
+                    outputs=[cal_html, cal_table, cal_year, cal_month],
+                )
+                btn_today.click(
+                    fn=go_today,
+                    outputs=[cal_html, cal_table, cal_year, cal_month],
+                )
+                refresh_cal_btn.click(
+                    fn=refresh_cal,
+                    inputs=[cal_year, cal_month],
+                    outputs=[cal_html, cal_table],
                 )
 
     return cast(gr.Blocks, demo)
