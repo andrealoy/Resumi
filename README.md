@@ -4,7 +4,8 @@ Personal assistant built with FastAPI + Gradio. Ingests Gmail messages, indexes 
 
 ## Features
 
-- **Chat assistant** — keyword-routed agent with RAG, calculator, web search, draft-reply, and app-action tools
+- **Chat assistant** — keyword-routed agent with RAG, calculator, web search, calendar, draft-reply, and app-action tools
+- **Calendar** — add events via natural language in French ("ajoute un rdv lundi à 14h"), stored locally in CSV, with a visual monthly grid view
 - **Intelligent search routing** — distinguishes between mail queries (sent/received), document queries (CV, diplomas) and general questions
 - **Gmail sync** — OAuth connection, step-by-step progress in chat, configurable mail count
 - **Document upload** — PDF, text, audio transcription via OpenAI Whisper
@@ -26,13 +27,13 @@ src/resumi/
 │   ├── mail_tools.py      # LLM tools: classify email & draft reply
 │   ├── document_store.py  # SQLite metadata catalogue
 │   ├── document_loader.py # User file uploads + dedup + reindex
-│   ├── langchain_agent.py # LangChain agent (calculator + web search)
+│   ├── langchain_agent.py # LangChain agent (calculator + web search + calendar)
 │   ├── audio_handler.py   # Microphone recording + OpenAI Whisper transcription
-│   ├── tools.py           # Calculator tool (safe eval)
+│   ├── tools.py           # Calculator tool (safe eval) + tool re-exports
 │   ├── web_search.py      # DuckDuckGo web search
-│   └── calendar.py        # Placeholder
+│   └── calendar.py        # Local CSV calendar (dateparser + pandas)
 └── ui/
-    ├── gradio_ui.py       # Gradio UI (Chat + Documents + Mails tabs)
+    ├── gradio_ui.py       # Gradio UI (Chat + Documents + Mails + Calendrier tabs)
     └── chat.py            # Sync/async bridge (Gradio ↔ Agent)
 ```
 
@@ -75,6 +76,7 @@ Open `http://127.0.0.1:8000` (redirects to `/gradio`).
 | `gmail_connect`  | "connecte Gmail", "connecte-moi"                      |
 | `gmail_sync`     | "synchronise mes mails", "sync"                       |
 | `gmail_status`   | "statut Gmail", "Gmail est connecté ?"                |
+| `calendar`       | "ajoute un événement", "ajoute un rdv", "planifie"   |
 | `classify_mails` | "classe mes mails", "trie mes mails"                  |
 | `classify_docs`  | "classe mes documents"                                |
 | `list_mails`     | "liste mes mails", "mes derniers mails"               |
@@ -153,14 +155,15 @@ curl -X POST http://127.0.0.1:8000/api/v1/gmail/sync \
 
 ## Makefile
 
-| Target           | Command                                        |
-|------------------|------------------------------------------------|
-| `make install`   | `uv sync --all-groups`                         |
-| `make lint`      | `ruff check` + `ruff format --check` + `mypy`  |
-| `make test`      | `uv run pytest`                                |
-| `make agent-test`| `uv run pytest tests/test_tool_routing.py -v`  |
-| `make run`       | `uvicorn resumi.main:app --reload`             |
-| `make clean`     | Remove caches, token, FAISS, SQLite, docs      |
+| Target            | Command                                        |
+|-------------------|------------------------------------------------|
+| `make install`    | `uv sync --all-groups`                         |
+| `make lint`       | `ruff check` + `ruff format --check` + `mypy`  |
+| `make test`       | `uv run pytest`                                |
+| `make agent-test` | `uv run pytest tests/test_tool_routing.py -v`  |
+| `make run`        | `uvicorn resumi.main:app --reload`             |
+| `make clean`      | Remove caches, token, FAISS, SQLite, docs, calendar |
+| `make reset-venv` | Delete and rebuild `.venv`                     |
 
 ## Testing
 
@@ -173,7 +176,27 @@ make agent-test    # 104 keyword routing tests only
 
 ```bash
 docker build -t resumi .
-docker run -p 8000:8000 --env-file .env -v ./credentials:/app/credentials resumi
+```
+
+Run with your API key:
+
+```bash
+# Option 1: pass the key directly
+docker run -it -p 8000:8000 -e OPENAI_API_KEY=sk-... resumi
+
+# Option 2: use an env file
+cp .env.example .env   # edit with your key
+docker run -it -p 8000:8000 --env-file .env resumi
+
+# Option 3: interactive — the container asks for your key
+docker run -it -p 8000:8000 resumi
+```
+
+The image is also available on Docker Hub:
+
+```bash
+docker pull andrealoy/resumi:latest
+docker run -it -p 8000:8000 -e OPENAI_API_KEY=sk-... andrealoy/resumi:latest
 ```
 
 ## Deployment
