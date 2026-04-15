@@ -10,7 +10,7 @@ Personal assistant built with FastAPI + Gradio. Ingests Gmail messages, indexes 
 - **Gmail sync** — OAuth connection, step-by-step progress in chat, configurable mail count
 - **Document upload** — PDF, text, audio transcription via OpenAI Whisper
 - **Auto-classification** — LLM-powered mail and document categorization
-- **Voice input** — microphone recording + transcription in the chat
+- **Voice input** — browser microphone recording + transcription in the chat (Docker-friendly)
 - **Dark UI** — violet-accented theme with Source Serif 4 typography
 
 ## Structure

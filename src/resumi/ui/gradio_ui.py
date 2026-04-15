@@ -12,7 +12,7 @@ import gradio as gr
 import pandas as pd
 
 from resumi.core.agent import Agent
-from resumi.core.audio_handler import start_recording, stop_recording, transcribe_file
+from resumi.core.audio_handler import transcribe_file
 from resumi.core.calendar import CALENDAR_FILE
 from resumi.core.document_loader import DocumentLoader
 from resumi.core.document_store import DocumentStore
@@ -704,7 +704,7 @@ def create_gradio_blocks(
                     show_label=False,
                 )
 
-                # --- message input + send + audio
+                # --- message input + send
                 with gr.Row():
                     message = gr.Textbox(
                         placeholder="Demander à Resumi",
@@ -719,18 +719,22 @@ def create_gradio_blocks(
                         min_width=80,
                         elem_classes=["send-btn"],
                     )
-                    btn_mic = gr.Button(
-                        "🎙️",
-                        variant="secondary",
-                        scale=0,
-                        min_width=50,
+
+                with gr.Accordion("🎙️ Message vocal", open=False):
+                    gr.Markdown(
+                        "Enregistre un vocal depuis ton navigateur, puis envoie-le au chat."
                     )
-                    btn_stop = gr.Button(
-                        "🛑",
-                        variant="stop",
-                        scale=0,
-                        min_width=50,
-                    )
+                    with gr.Row():
+                        chat_audio_input = gr.Audio(
+                            sources=["microphone"],
+                            type="filepath",
+                            label="Vocal",
+                        )
+                        chat_audio_btn = gr.Button(
+                            "Envoyer le vocal",
+                            variant="secondary",
+                            min_width=140,
+                        )
 
                 # --- others
                 with gr.Accordion("Sources consultées", open=False):
@@ -744,7 +748,6 @@ def create_gradio_blocks(
                         wrap=True,
                     )
 
-                is_rec = gr.State(False)
                 pending_sync = gr.State(False)
 
                 # --- functions connexion to gmail
@@ -982,22 +985,43 @@ def create_gradio_blocks(
                         _build_calendar_table(),
                     )
 
-                # --- functions mic
-                def agent_voice_respond(transcript: str, history: list[dict[str, str]]):
+                def handle_chat_audio(
+                    audio_path: str | None,
+                    history: list[dict[str, str]],
+                ):
+                    if not audio_path:
+                        updated = history + [
+                            {
+                                "role": "assistant",
+                                "content": "🎙️ Aucun vocal reçu. Enregistre un message puis réessaie.",
+                            }
+                        ]
+                        return updated, [], _build_calendar_table(), None
+
+                    status, transcript = transcribe_file(audio_path)
                     if not transcript or transcript.startswith("("):
-                        return history, [], _build_calendar_table()
+                        updated = history + [
+                            {
+                                "role": "assistant",
+                                "content": f"🎙️ {status}",
+                            }
+                        ]
+                        return updated, [], _build_calendar_table(), None
 
-                    result = ask(
-                        agent, transcript, history[:-2]
-                    )  # On enlève les 2 derniers (user + loading) pour l'appel
-
-                    new_history = history[:-1] + [
-                        {"role": "assistant", "content": str(result["answer"])}
+                    result = ask(agent, transcript, history)
+                    updated = history + [
+                        {"role": "user", "content": transcript},
+                        {
+                            "role": "assistant",
+                            "content": str(result["answer"]),
+                        },
                     ]
-                    return new_history, result.get("sources", []), _build_calendar_table()
-
-                # Un état caché pour stocker le texte transcrit entre les deux étapes
-                temp_transcript = gr.State("")
+                    return (
+                        updated,
+                        result.get("sources", []),
+                        _build_calendar_table(),
+                        None,
+                    )
 
                 chat_event = message.submit(
                     respond,
@@ -1010,80 +1034,10 @@ def create_gradio_blocks(
                     outputs=[chatbot, message, sources, pending_sync, calendar_table],
                 )
 
-                def handle_mic(recording: bool, history: list[dict[str, str]]):
-                    if not recording:
-                        try:
-                            start_recording()
-                        except Exception as exc:
-                            history = history + [
-                                {
-                                    "role": "assistant",
-                                    "content": f"❌ Micro indisponible : {exc}",
-                                },
-                            ]
-                            return (
-                                False,
-                                gr.update(value="🎙️", variant="secondary"),
-                                history,
-                                "",
-                            )
-                        return True, gr.update(value="⏹", variant="stop"), history, ""
-                    else:
-                        try:
-                            _, transcript = stop_recording()
-                        except Exception as exc:
-                            history = history + [
-                                {
-                                    "role": "assistant",
-                                    "content": f"❌ Erreur enregistrement : {exc}",
-                                },
-                            ]
-                            return (
-                                False,
-                                gr.update(value="🎙️", variant="secondary"),
-                                history,
-                                "",
-                            )
-                        if not transcript or transcript.startswith("("):
-                            return (
-                                False,
-                                gr.update(value="🎙️", variant="secondary"),
-                                history,
-                                "",
-                            )
-
-                        new_history = history + [
-                            {"role": "user", "content": transcript},
-                            {
-                                "role": "assistant",
-                                "content": "*En train de réfléchir...*",
-                            },
-                        ]
-                        return (
-                            False,
-                            gr.update(value="🎙️", variant="secondary"),
-                            new_history,
-                            transcript,
-                        )
-
-                voice_event = btn_mic.click(
-                    fn=handle_mic,
-                    inputs=[is_rec, chatbot],
-                    outputs=[is_rec, btn_mic, chatbot, temp_transcript],
-                ).then(
-                    fn=agent_voice_respond,
-                    inputs=[temp_transcript, chatbot],
-                    outputs=[chatbot, sources, calendar_table],
-                )
-
-                btn_stop.click(
-                    fn=lambda: (
-                        False,
-                        gr.update(value="🎙️", variant="secondary", interactive=True),
-                        gr.update(),
-                    ),
-                    outputs=[is_rec, btn_mic, btn_stop],
-                    cancels=[chat_event, voice_event],
+                chat_audio_btn.click(
+                    fn=handle_chat_audio,
+                    inputs=[chat_audio_input, chatbot],
+                    outputs=[chatbot, sources, calendar_table, chat_audio_input],
                 )
 
             # ── Tab 2: Upload Documents ────────────────────────────────
@@ -1113,8 +1067,13 @@ def create_gradio_blocks(
                                 scale=2,
                             )
 
+                            browser_audio_input = gr.Audio(
+                                sources=["microphone", "upload"],
+                                type="filepath",
+                                label="Enregistrer ou déposer un audio",
+                            )
                             btn_record = gr.Button(
-                                "🎙️ Lancer l'enregistrement live",
+                                "🎙️ Transcrire et indexer",
                                 variant="primary",
                                 scale=1,
                             )
@@ -1127,8 +1086,6 @@ def create_gradio_blocks(
                             )
 
                     upload_btn = gr.Button("Lancer l'indexation", variant="primary")
-
-                is_doc_rec = gr.State(False)
 
                 with gr.Row():
                     gr.Markdown("## Documents indexés")
@@ -1146,43 +1103,29 @@ def create_gradio_blocks(
                     wrap=True,
                 )
 
-                def handle_doc_recording(recording: bool, name: str, folder: str):
-                    if not recording:
-                        start_recording()
-                        return (
-                            True,
-                            gr.update(value="⏹ Arrêter", variant="stop"),
-                            "⏺ Enregistrement en cours...",
-                        )
-                    else:
-                        _, transcript = stop_recording()
-                        if not transcript or transcript.startswith("("):
-                            return (
-                                False,
-                                gr.update(value="🎙️ Démarrer", variant="primary"),
-                                "Aucun audio capturé.",
-                            )
+                def handle_doc_recording(audio_path: str | None, name: str, folder: str):
+                    if not audio_path:
+                        return "Aucun audio fourni. Utilise le micro du navigateur ou dépose un fichier audio."
 
-                        rec_name = name.strip() or "enregistrement"
-                        txt_filename = f"{rec_name}.txt"
-                        txt_path = os.path.join(tempfile.gettempdir(), txt_filename)
+                    status, transcript = transcribe_file(audio_path)
+                    if not transcript or transcript.startswith("("):
+                        return status or "Aucun audio capturé."
 
-                        with open(txt_path, "w", encoding="utf-8") as f:
-                            f.write(transcript)
+                    rec_name = name.strip() or "enregistrement"
+                    txt_filename = f"{rec_name}.txt"
+                    txt_path = os.path.join(tempfile.gettempdir(), txt_filename)
 
-                        folder_name = folder.strip() or "enregistrements"
-                        msg = document_loader.save_files([txt_path], folder_name)
+                    with open(txt_path, "w", encoding="utf-8") as f:
+                        f.write(transcript)
 
-                        return (
-                            False,
-                            gr.update(value="🎙️ Démarrer", variant="primary"),
-                            f"✅ {msg}",
-                        )
+                    folder_name = folder.strip() or "enregistrements"
+                    msg = document_loader.save_files([txt_path], folder_name)
+                    return f"✅ {msg}"
 
                 btn_record.click(
                     fn=handle_doc_recording,
-                    inputs=[is_doc_rec, record_name, folder_input],
-                    outputs=[is_doc_rec, btn_record, record_status],
+                    inputs=[browser_audio_input, record_name, folder_input],
+                    outputs=[record_status],
                 ).then(fn=lambda: _build_doc_table(store), outputs=[doc_table])
 
                 def handle_upload_v2(files, folder_name):
