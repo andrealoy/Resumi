@@ -772,23 +772,36 @@ def create_gradio_blocks(
 
                 def handle_gmail_btn(history: list[dict[str, str]]):
                     if not gmail_handler.is_connected():
-                        ok = gmail_handler.connect()
-                        if not ok:
+                        if not gmail_handler.has_client_secrets():
                             yield (
-                                history,
+                                history
+                                + [{
+                                    "role": "assistant",
+                                    "content": (
+                                        "⚠️ Le fichier OAuth Gmail est introuvable dans le conteneur.\n\n"
+                                        "Relance Docker avec le dossier credentials monté sur /app/credentials, "
+                                        "puis réessaie."
+                                    ),
+                                }],
                                 _dot_html_ko,
                                 gr.update(value="Se connecter"),
                             )
                             return
 
                         yield (
-                            history,
-                            _dot_html_ok,
-                            gr.update(
-                                value="Synchroniser",
-                                variant="secondary",
-                            ),
+                            history
+                            + [{
+                                "role": "assistant",
+                                "content": (
+                                    "🔐 Pour connecter Gmail, ouvre ce lien dans ton navigateur : "
+                                    "[Se connecter à Gmail](/api/v1/gmail/connect)\n\n"
+                                    "Après validation Google, reviens ici puis reclique sur Synchroniser."
+                                ),
+                            }],
+                            _dot_html_ko,
+                            gr.update(value="Se connecter"),
                         )
+                        return
 
                     # Lancement de la synchro
                     for new_history in _run_sync_steps(

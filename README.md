@@ -184,19 +184,27 @@ Run with your API key:
 # Option 1: pass the key directly
 docker run -it -p 8000:8000 -e OPENAI_API_KEY=sk-... resumi
 
-# Option 2: use an env file
+# Option 2: use an env file + mount OAuth credentials for Gmail
 cp .env.example .env   # edit with your key
-docker run -it -p 8000:8000 --env-file .env resumi
+docker run -it -p 8000:8000 --env-file .env \
+  -v "$(pwd)/credentials:/app/credentials" \
+  resumi
 
 # Option 3: interactive — the container asks for your key
-docker run -it -p 8000:8000 resumi
+docker run -it -p 8000:8000 \
+  -v "$(pwd)/credentials:/app/credentials" \
+  resumi
 ```
+
+For Gmail inside Docker, click **Se connecter** in the UI, then open the link shown in the chat. The callback now returns to the app on port 8000.
 
 The image is also available on Docker Hub:
 
 ```bash
 docker pull andrealoy/resumi:latest
-docker run -it -p 8000:8000 -e OPENAI_API_KEY=sk-... andrealoy/resumi:latest
+docker run -it -p 8000:8000 -e OPENAI_API_KEY=sk-... \
+  -v "$(pwd)/credentials:/app/credentials" \
+  andrealoy/resumi:latest
 ```
 
 ## Deployment

@@ -36,4 +36,12 @@ if [[ -z "$OPENAI_API_KEY" || "$OPENAI_API_KEY" == "sk-your-key-here" ]]; then
     fi
 fi
 
+GMAIL_SECRETS_PATH="${GMAIL_CLIENT_SECRETS_FILE:-credentials/gmail-client-secret.json}"
+if [[ ! -f "$GMAIL_SECRETS_PATH" ]]; then
+    echo -e "\033[33m⚠  Fichier OAuth Gmail introuvable dans le conteneur : $GMAIL_SECRETS_PATH\033[0m"
+    echo "   Pour Gmail avec Docker :"
+    echo "   docker run -it -p 8000:8000 --env-file .env -v \"\$PWD/credentials:/app/credentials\" resumi"
+    echo ""
+fi
+
 exec "$@"
