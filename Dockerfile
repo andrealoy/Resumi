@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-COPY credentials ./credentials
 
 RUN uv sync --no-dev --frozen || uv sync --no-dev
 

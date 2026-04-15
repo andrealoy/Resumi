@@ -198,6 +198,8 @@ docker run -it -p 8000:8000 \
 
 For Gmail inside Docker, click **Se connecter** in the UI, then open the link shown in the chat. The callback now returns to the app on port 8000.
 
+The Docker image does not embed your local OAuth files; they are provided only by the runtime volume mount.
+
 The image is also available on Docker Hub:
 
 ```bash
