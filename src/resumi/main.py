@@ -6,8 +6,8 @@ from functools import lru_cache
 from typing import cast
 
 import gradio as gr
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from resumi.config import get_settings
@@ -178,6 +178,33 @@ def create_app() -> FastAPI:
     async def gmail_sync(req: GmailSyncRequest) -> dict[str, object]:
         half = req.max_results // 2
         return await _gmail().sync(received_max=half, sent_max=req.max_results - half)
+
+    @app.get("/api/v1/gmail/connect")
+    async def gmail_connect(request: Request):
+        try:
+            auth_url = _gmail().begin_oauth(base_url=str(request.base_url).rstrip("/"))
+        except FileNotFoundError as exc:
+            return HTMLResponse(
+                "<h2>Configuration Gmail manquante</h2>"
+                f"<p>{exc}</p>"
+                "<p>Monte le dossier credentials dans le conteneur puis relance Resumi.</p>",
+                status_code=400,
+            )
+        return RedirectResponse(url=auth_url)
+
+    @app.get("/api/v1/gmail/oauth/callback")
+    async def gmail_oauth_callback(state: str = "", code: str = "") -> HTMLResponse:
+        ok = _gmail().finish_oauth(state=state, code=code)
+        if ok:
+            return HTMLResponse(
+                "<h2>Gmail connecté ✅</h2>"
+                "<p>Tu peux revenir dans Resumi et cliquer sur Synchroniser.</p>"
+            )
+        return HTMLResponse(
+            "<h2>Connexion Gmail échouée ❌</h2>"
+            "<p>Relance le lien de connexion depuis Resumi.</p>",
+            status_code=400,
+        )
 
     # -- Gradio UI -----------------------------------------------------------
 

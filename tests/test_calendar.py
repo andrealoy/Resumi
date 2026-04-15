@@ -1,8 +1,10 @@
 import os
 import csv
+from datetime import datetime
 
 import pytest
 
+import resumi.core.calendar as calendar_module
 from resumi.core.calendar import calendar_tool, CALENDAR_FILE
 
 
@@ -41,6 +43,38 @@ def test_calendar_tool_creates_csv_and_writes_row(tmp_path, monkeypatch):
     # Date is YYYY-MM-DD and Heure is HH:MM
     assert row["Date"] == "2026-04-15"
     assert row["Heure"] == "14:30"
+
+
+def test_calendar_tool_parses_french_day_and_hour_without_century_bug(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(calendar_module, "_now", lambda: datetime(2026, 4, 15, 15, 0))
+
+    result = calendar_tool("Coiffeur", "15 avril 14h")
+
+    assert "SUCCÈS" in result or "SUCCES" in result
+
+    with open(CALENDAR_FILE, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    row = rows[-1]
+    assert row["Date"] == "2026-04-15"
+    assert row["Heure"] == "14:00"
+
+
+def test_calendar_tool_parses_time_only_as_same_day_hour(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(calendar_module, "_now", lambda: datetime(2026, 4, 15, 9, 30))
+
+    result = calendar_tool("Coiffeur", "14h")
+
+    assert "SUCCÈS" in result or "SUCCES" in result
+
+    with open(CALENDAR_FILE, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    row = rows[-1]
+    assert row["Date"] == "2026-04-15"
+    assert row["Heure"] == "14:00"
 
 
 if __name__ == "__main__":

@@ -282,3 +282,42 @@ def test_route_docs(agent: Agent, message: str):
 def test_route_all(agent: Agent, message: str):
     route = agent._route(message)
     assert route["label"] == "all"
+
+
+@pytest.mark.asyncio
+async def test_chat_uses_llm_router_when_heuristics_miss(monkeypatch):
+    agent = Agent.__new__(Agent)
+
+    monkeypatch.setattr(Agent, "_needs_tool", lambda self, message: None)
+    monkeypatch.setattr(Agent, "_llm_tool_decision", lambda self, message, history=None: "web")
+
+    class DummyMessage:
+        content = "Résultat web"
+
+    class DummyLangChainAgent:
+        def invoke(self, payload):
+            return {"messages": [DummyMessage()]}
+
+    agent._lc_agent = DummyLangChainAgent()
+
+    result = await Agent.chat(agent, message="Peux-tu regarder les news OpenAI ?")
+    assert result == {"answer": "Résultat web", "sources": []}
+
+
+@pytest.mark.asyncio
+async def test_chat_falls_back_to_rag_when_llm_router_returns_none(monkeypatch):
+    agent = Agent.__new__(Agent)
+
+    monkeypatch.setattr(Agent, "_needs_tool", lambda self, message: None)
+    monkeypatch.setattr(Agent, "_llm_tool_decision", lambda self, message, history=None: None)
+    monkeypatch.setattr(Agent, "_route", lambda self, message: {"label": "all", "prefixes": None, "strict": False})
+    monkeypatch.setattr(Agent, "_search", lambda self, message, route: [])
+    monkeypatch.setattr(Agent, "_temporal_context", lambda self, message, route, history=None: None)
+
+    async def fake_answer(self, message, sources, route, history=None, temporal=None):
+        return "Réponse RAG"
+
+    monkeypatch.setattr(Agent, "_answer", fake_answer)
+
+    result = await Agent.chat(agent, message="Bonjour")
+    assert result == {"answer": "Réponse RAG", "sources": []}

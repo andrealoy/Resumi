@@ -11,7 +11,11 @@ from openai import AsyncOpenAI
 
 from resumi.core.document_store import DocumentStore
 from resumi.core.embedding import DocumentMatch, FaissKnowledgeBase
-from resumi.core.langchain_agent import build_langchain_agent
+from resumi.core.langchain_agent import (
+    build_langchain_agent,
+    build_tool_router,
+    route_tool_call,
+)
 from resumi.core.mail_tools import classify_and_store as _classify_and_store
 from resumi.core.mail_tools import classify_email as _classify_email
 from resumi.core.mail_tools import draft_email_reply as _draft_email_reply
@@ -52,6 +56,7 @@ class Agent:
             base_url=effective_base_url,
         )
         self._lc_agent = build_langchain_agent(model=model, api_key=api_key)
+        self._tool_router = build_tool_router(model=model, api_key=api_key)
 
     # Keywords that suggest a calculator tool call.
     _CALC_KW = (
@@ -283,9 +288,15 @@ class Agent:
         history: list[dict[str, str]] | None = None,
     ) -> dict[str, object]:
         tool = self._needs_tool(message)
+        route_source = "heuristics" if tool else "llm-router"
+        if not tool:
+            tool = self._llm_tool_decision(message, history)
+            if not tool:
+                route_source = "rag-fallback"
         logger.info(
-            "Tool routing: %s | message=%s",
+            "Tool routing: %s via %s | message=%s",
             tool or "RAG (no tool match)",
+            route_source,
             message[:80],
         )
 
@@ -345,6 +356,22 @@ class Agent:
             "answer": answer,
             "sources": [s.to_dict() for s in sources],
         }
+
+    def _llm_tool_decision(
+        self,
+        message: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> str | None:
+        """Ask a lightweight LangChain router whether a tool is needed."""
+        try:
+            return route_tool_call(
+                self._tool_router,
+                message=message,
+                history=history,
+            )
+        except Exception as exc:
+            logger.warning("LLM tool router failed: %s", exc)
+            return None
 
     async def classify_email(self, *, email_text: str) -> dict[str, str]:
         return await _classify_email(self._client, self._model, email_text)
@@ -456,15 +483,15 @@ class Agent:
             return self._app_reply(
                 "✅ Gmail est déjà connecté."
             )
-        ok = self._gmail.connect()
-        if ok:
+        if not self._gmail.has_client_secrets():
             return self._app_reply(
-                "✅ Gmail connecté avec succès ! "
-                "Tu peux maintenant synchroniser tes mails."
+                "⚠️ Le fichier OAuth Gmail est introuvable dans le conteneur. "
+                "Monte le dossier credentials sur /app/credentials puis relance Resumi."
             )
         return self._app_reply(
-            "❌ Échec de la connexion Gmail. "
-            "Vérifie les identifiants OAuth."
+            "🔐 Pour connecter Gmail, clique sur le bouton Se connecter "
+            "ou ouvre /api/v1/gmail/connect dans ton navigateur, "
+            "puis relance la synchronisation."
         )
 
     async def _action_gmail_sync(self) -> dict[str, object]:

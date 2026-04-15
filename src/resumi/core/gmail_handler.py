@@ -42,6 +42,8 @@ class GmailHandler:
         self._store = store
         self._query = query
         self._user_id = user_id
+        self._oauth_flow: InstalledAppFlow | None = None
+        self._oauth_state: str | None = None
 
     # -- public API ----------------------------------------------------------
 
@@ -70,6 +72,50 @@ class GmailHandler:
             return True
         except Exception:
             return False
+
+    def has_client_secrets(self) -> bool:
+        """Return *True* if the Gmail OAuth client JSON is available."""
+        return self._secrets.exists()
+
+    def begin_oauth(self, base_url: str) -> str:
+        """Create a browser-friendly OAuth URL for local/Docker usage."""
+        if not self._secrets.exists():
+            raise FileNotFoundError(
+                f"Missing Gmail OAuth client file at {self._secrets}"
+            )
+        flow = InstalledAppFlow.from_client_secrets_file(
+            str(self._secrets), GMAIL_SCOPES
+        )
+        flow.redirect_uri = (
+            f"{base_url.rstrip('/')}" "/api/v1/gmail/oauth/callback"
+        )
+        auth_url, state = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent",
+        )
+        self._oauth_flow = flow
+        self._oauth_state = state
+        return auth_url
+
+    def finish_oauth(self, *, state: str, code: str) -> bool:
+        """Complete the browser OAuth callback and persist the token."""
+        if not self._oauth_flow or not self._oauth_state:
+            return False
+        if state != self._oauth_state:
+            self._oauth_flow = None
+            self._oauth_state = None
+            return False
+        try:
+            self._oauth_flow.fetch_token(code=code)
+            creds = self._oauth_flow.credentials
+            self._save_creds(creds)
+            return True
+        except Exception:
+            return False
+        finally:
+            self._oauth_flow = None
+            self._oauth_state = None
 
     def last_sync_date(self) -> datetime | None:
         """Return the most recent sync timestamp found in saved mails, or *None*."""
