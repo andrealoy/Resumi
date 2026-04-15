@@ -30,6 +30,11 @@ _MONTHS_FR = (
 _TIME_ONLY_RE = re.compile(r"^\s*(\d{1,2}):(\d{2})\s*$")
 
 
+def _now() -> datetime:
+    """Current time helper kept separate for deterministic tests."""
+    return datetime.now()
+
+
 def _normalize_date_text(text: str) -> str:
     """Normalize French time expressions like '14h' into '14:00'."""
     normalized = " ".join(text.strip().split())
@@ -54,20 +59,32 @@ def _has_explicit_date(text: str) -> bool:
 def _parse_event_datetime(date_time: str) -> datetime | None:
     """Parse user date/time robustly for French calendar inputs."""
     normalized = _normalize_date_text(date_time)
+    now = _now()
 
     if _TIME_ONLY_RE.fullmatch(normalized) and not _has_explicit_date(normalized):
         hour, minute = map(int, normalized.split(":"))
-        now = datetime.now()
         return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
-    return dateparser.parse(
+    dt = dateparser.parse(
         normalized,
         languages=["fr"],
         settings={
             "PREFER_DATES_FROM": "future",
             "DATE_ORDER": "DMY",
+            "RELATIVE_BASE": now,
         },
     )
+
+    if dt is None:
+        return None
+
+    # If the user explicitly gave today's day/month but the requested hour is
+    # already in the past, dateparser can jump to next year because of the
+    # 'future' preference. Keep the current year in that specific case.
+    if dt.year == now.year + 1 and dt.month == now.month and dt.day == now.day:
+        dt = dt.replace(year=now.year)
+
+    return dt
 
 
 def calendar_tool(event_details: str, date_time: str) -> str:
